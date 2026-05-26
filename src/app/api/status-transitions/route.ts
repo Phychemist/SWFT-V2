@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase-server'
 import { getSession, canChangeTicketStatus, isFieldExecutive, isOfficerBackoffice, canBackofficeChangeToStage, isScientist, canScientistChangeToStage } from '@/lib/auth'
 import type { ApiResponse, StatusTransition, WorkflowStage } from '@/lib/types'
+import { autoCreateConsumptions } from '@/lib/inventory'
 
 // GET - List transitions for a ticket OR for a specific user (history)
 export async function GET(request: NextRequest) {
@@ -458,6 +459,11 @@ export async function POST(request: NextRequest) {
                 { success: false, error: `Transition created but ticket update failed: ${ticketUpdateError.message}` },
                 { status: 500 }
             )
+        }
+
+        // Trigger auto-consumption if transitioning to the completed stage
+        if (stageName === 'submitted and closed') {
+            await autoCreateConsumptions(ticket_id)
         }
 
         // ============================================

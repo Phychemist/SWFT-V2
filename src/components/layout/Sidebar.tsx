@@ -19,6 +19,9 @@ import {
     Upload,
     ClipboardList,
     Ban,
+    Wallet,
+    Receipt,
+    Boxes,
 } from 'lucide-react'
 import type { UserRole } from '@/lib/types'
 
@@ -67,6 +70,12 @@ const navItems: NavItem[] = [
         roles: ['officer_backoffice'],
     },
     {
+        label: 'Inventory',
+        href: '/backoffice/inventory',
+        icon: <Boxes size={20} />,
+        roles: ['officer_backoffice'],
+    },
+    {
         label: 'Lab Reports',
         href: '/scientist',
         icon: <FlaskConical size={20} />,
@@ -83,6 +92,49 @@ const navItems: NavItem[] = [
         href: '/field-executive?tab=completed',
         icon: <CheckCircle2 size={20} />,
         roles: ['field_executive'],
+    },
+    {
+        label: 'My Claims',
+        href: '/field-executive/claims',
+        icon: <Receipt size={20} />,
+        roles: ['field_executive'],
+    },
+    {
+        label: 'My Claims',
+        href: '/manager/claims',
+        icon: <Receipt size={20} />,
+        roles: ['manager'],
+    },
+    // ── Accountant Slices A–F Navigation ──────────────────────────
+    {
+        label: 'Fund Management',
+        href: '/accountant/funds',
+        icon: <Wallet size={20} />,
+        roles: ['accountant'],
+    },
+    {
+        label: 'Expense Claims',
+        href: '/accountant/claims',
+        icon: <ClipboardList size={20} />,
+        roles: ['accountant'],
+    },
+    {
+        label: 'Hospital Charges',
+        href: '/accountant/hospital-charges',
+        icon: <Building2 size={20} />,
+        roles: ['accountant'],
+    },
+    {
+        label: 'Billing & Invoices',
+        href: '/accountant/billing',
+        icon: <Receipt size={20} />,
+        roles: ['accountant'],
+    },
+    {
+        label: 'Inventory Logs',
+        href: '/accountant/inventory',
+        icon: <Boxes size={20} />,
+        roles: ['accountant'],
     },
 ]
 

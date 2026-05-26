@@ -67,6 +67,80 @@ export default function FieldExecutiveTicketDetail({ params }: { params: Promise
     const [editPatientAge2, setEditPatientAge2] = useState('')
     const [isSavingPatient, setIsSavingPatient] = useState(false)
 
+    // Slices A-F Integration: Inventory Consumption State
+    const [consumptions, setConsumptions] = useState<any[]>([])
+    const [loadingConsumptions, setLoadingConsumptions] = useState(false)
+    const [overrideState, setOverrideState] = useState<Record<string, { quantity: number; reason: string; loading: boolean }>>({})
+
+    const fetchConsumptions = async () => {
+        try {
+            setLoadingConsumptions(true)
+            const res = await fetch(`/api/inventory/consumptions?ticket_id=${id}`)
+            const data = await res.json()
+            if (data.success) {
+                setConsumptions(data.data)
+                const initialOverrides: any = {}
+                data.data.forEach((c: any) => {
+                    initialOverrides[c.id] = {
+                        quantity: c.quantity_used,
+                        reason: c.override_reason || '',
+                        loading: false
+                    }
+                })
+                setOverrideState(initialOverrides)
+            }
+        } catch (err) {
+            console.error('Failed to load ticket consumptions:', err)
+        } finally {
+            setLoadingConsumptions(false)
+        }
+    }
+
+    const canOverride = (createdAtStr: string) => {
+        const completionTime = new Date(createdAtStr).getTime()
+        const diffHours = (Date.now() - completionTime) / (1000 * 60 * 60)
+        return diffHours <= 24
+    }
+
+    const handleOverrideSubmit = async (consumptionId: string) => {
+        const state = overrideState[consumptionId]
+        if (!state) return
+
+        try {
+            setError(null)
+            setOverrideState(prev => ({
+                ...prev,
+                [consumptionId]: { ...prev[consumptionId], loading: true }
+            }))
+
+            const res = await fetch('/api/inventory/consumptions', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    id: consumptionId,
+                    quantity_used: state.quantity,
+                    override_reason: state.reason
+                })
+            })
+
+            const data = await res.json()
+            if (data.success) {
+                setSuccess('Inventory override saved successfully!')
+                setTimeout(() => setSuccess(null), 3000)
+                await fetchConsumptions()
+            } else {
+                setError(data.error || 'Failed to submit override')
+            }
+        } catch (err) {
+            setError('An error occurred while submitting the override')
+        } finally {
+            setOverrideState(prev => ({
+                ...prev,
+                [consumptionId]: { ...prev[consumptionId], loading: false }
+            }))
+        }
+    }
+
     const isMultiDiagnostic = ticket?.diagnostics && ticket.diagnostics.length > 0
     const activeDiagnostics = isMultiDiagnostic
         ? ticket.diagnostics.filter((d: any) => !d.is_cancelled)
@@ -184,6 +258,7 @@ export default function FieldExecutiveTicketDetail({ params }: { params: Promise
                         setSampleImage(data.data.sample_image_url || null)
                         setCourierImage(data.data.courier_image_url || null)
                     }
+                    fetchConsumptions()
                     fetchComments()
                 } else {
                     setError(data.error)
@@ -224,6 +299,7 @@ export default function FieldExecutiveTicketDetail({ params }: { params: Promise
                     setSampleImage(data.data.sample_image_url || null)
                     setCourierImage(data.data.courier_image_url || null)
                 }
+                fetchConsumptions()
             }
         } catch (_) {}
     }
@@ -788,6 +864,99 @@ export default function FieldExecutiveTicketDetail({ params }: { params: Promise
                         </div>
                     </div>
                 </div>
+
+                {/* Inventory Consumption & Override */}
+                {consumptions.length > 0 && (
+                    <div className="bg-white p-5 rounded-2xl border border-[var(--border-light)] shadow-sm">
+                        <h2 className="font-bold text-[var(--text-primary)] mb-4" style={{ fontSize: '14px', letterSpacing: '0.05em' }}>INVENTORY CONSUMPTION</h2>
+                        <div className="space-y-6">
+                            {consumptions.map((c) => {
+                                const isOverridden = c.overridden
+                                const isWithin24Hours = canOverride(c.created_at)
+                                const state = overrideState[c.id] || { quantity: c.quantity_used, reason: '', loading: false }
+
+                                return (
+                                    <div key={c.id} className="border-b border-gray-100 pb-5 last:border-0 last:pb-0">
+                                        <div className="flex items-center justify-between mb-2">
+                                            <span className="font-bold text-gray-800 text-sm">{c.item_name}</span>
+                                            <div className="flex items-center gap-2">
+                                                {isOverridden && (
+                                                    <span className="text-[10px] bg-amber-50 border border-amber-200 text-amber-700 px-2.5 py-0.5 rounded-full font-bold uppercase">
+                                                        Overridden
+                                                    </span>
+                                                )}
+                                                <span className="text-[10px] bg-gray-50 border border-gray-100 text-gray-500 px-2 py-0.5 rounded-full font-bold uppercase">
+                                                    {c.item_unit}
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex items-center justify-between text-xs text-gray-500 mb-3 bg-gray-50 p-2.5 rounded-xl">
+                                            <div>Default Kit Qty: <span className="font-bold text-gray-700">{c.kit_default_quantity}</span></div>
+                                            <div>Currently Charged: <span className="font-bold text-pink-600">{c.quantity_used}</span></div>
+                                        </div>
+
+                                        {isOverridden && c.override_reason && (
+                                            <div className="mb-4 bg-amber-50 border border-amber-100 rounded-xl p-3 text-xs text-amber-800">
+                                                <div className="font-semibold mb-1">Override Reason:</div>
+                                                <div className="italic">"{c.override_reason}"</div>
+                                            </div>
+                                        )}
+
+                                        {isWithin24Hours ? (
+                                            <div className="mt-4 space-y-3 bg-gray-50/50 p-4 rounded-xl border border-gray-100">
+                                                <div className="text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Override Usage</div>
+                                                <div>
+                                                    <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Actual Quantity Used</label>
+                                                    <input
+                                                        type="number"
+                                                        min={1}
+                                                        value={state.quantity}
+                                                        onChange={(e) => {
+                                                            const val = parseInt(e.target.value, 10) || 0
+                                                            setOverrideState(prev => ({
+                                                                ...prev,
+                                                                [c.id]: { ...prev[c.id], quantity: val }
+                                                            }))
+                                                        }}
+                                                        className="w-full px-3 py-2 text-sm border border-[var(--border-default)] rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-200 focus:border-pink-400 bg-white"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Remarks / Reason (Min 5 chars)</label>
+                                                    <textarea
+                                                        rows={2}
+                                                        value={state.reason}
+                                                        placeholder="Explain why the usage differed from the default kit..."
+                                                        onChange={(e) => {
+                                                            setOverrideState(prev => ({
+                                                                ...prev,
+                                                                [c.id]: { ...prev[c.id], reason: e.target.value }
+                                                            }))
+                                                        }}
+                                                        className="w-full px-3 py-2 text-xs border border-[var(--border-default)] rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-200 focus:border-pink-400 resize-none bg-white"
+                                                    />
+                                                </div>
+                                                <button
+                                                    onClick={() => handleOverrideSubmit(c.id)}
+                                                    disabled={state.loading || !state.reason || state.reason.length < 5 || state.quantity <= 0}
+                                                    className="w-full py-2 bg-pink-600 hover:bg-pink-700 disabled:bg-gray-200 disabled:text-gray-400 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-sm active:scale-98"
+                                                >
+                                                    {state.loading ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />}
+                                                    Submit Override
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            <div className="text-[10px] text-gray-400 italic text-center mt-2">
+                                                24-hour override window has closed for this item.
+                                            </div>
+                                        )}
+                                    </div>
+                                )
+                            })}
+                        </div>
+                    </div>
+                )}
 
                 {/* Internal Notes Section - Minimalist Redesign */}
                 <div className="bg-white rounded-2xl border border-[var(--border-light)] shadow-sm overflow-hidden flex flex-col max-h-[400px]">

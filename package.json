@@ -17,6 +17,7 @@
     "@supabase/ssr": "^0.8.0",
     "@supabase/supabase-js": "^2.90.1",
     "bcryptjs": "^3.0.3",
+    "xlsx": "^0.18.5",
     "browser-image-compression": "^2.0.2",
     "framer-motion": "^12.26.2",
     "jspdf": "^4.0.0",
