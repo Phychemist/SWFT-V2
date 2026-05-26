@@ -1,0 +1,570 @@
+# Seragen Workflow System - Deep Analysis & Context Document
+
+> **Purpose**: Comprehensive technical analysis of the Seragen project structure, ticket creation feature, permission model, and identified issues/improvements.
+> 
+> **Last Updated**: 2026-01-19
+
+---
+
+## 1. Project Overview
+
+**Seragen** is a **WhatsApp-Driven Workflow Visibility Tool** for managing medical diagnostic and therapeutic service requests.
+
+### Technology Stack
+
+| Component | Technology | Notes |
+|-----------|------------|-------|
+| Framework | Next.js 15 (App Router) | Server-side rendering, API routes |
+| Database | Supabase (PostgreSQL) | Hosted PostgreSQL with real-time capabilities |
+| UI | React + Tailwind CSS + Framer Motion | Custom component library in `src/components/ui` |
+| Auth | Custom cookie-based sessions | Base64-encoded session data (NOT JWT!) |
+| Validation | Zod + React Hook Form | Client-side form validation |
+| Password | bcryptjs | 12 rounds for hashing |
+
+### Directory Structure
+
+```
+e:\MPB\seragen\
+├── src/
+│   ├── app/
+│   │   ├── (dashboard)/          # Protected dashboard routes
+│   │   │   ├── tickets/          # Main ticketing pages
+│   │   │   │   ├── page.tsx      # Ticket list (770 lines)
+│   │   │   │   ├── new/          # Create ticket form
+│   │   │   │   └── [id]/         # Ticket detail (892 lines)
+│   │   │   ├── settings/         # Admin settings
+│   │   │   │   ├── workflow-stages/
+│   │   │   │   ├── custom-columns/
+│   │   │   │   ├── doctors/
+│   │   │   │   ├── hospitals/
+│   │   │   │   ├── service-types/
+│   │   │   │   └── users/
+│   │   │   └── dashboard/        # Main dashboard
+│   │   ├── api/                  # API routes (15+ endpoints)
+│   │   └── login/                # Login page
+│   ├── components/
+│   │   ├── ui/                   # 10 reusable UI components
+│   │   ├── layout/               # Sidebar, Header
+│   │   └── StatusChangeModal.tsx # Workflow status change modal
+│   ├── lib/
+│   │   ├── auth.ts               # Auth helpers (INCOMPLETE!)
+│   │   ├── supabase.ts           # Browser client
+│   │   ├── supabase-server.ts    # Server client
+│   │   └── types.ts              # TypeScript definitions
+│   └── middleware.ts             # Route protection
+├── migrations/                   # 6 SQL migration files
+└── supabase_schema.sql           # Main database schema
+```
+
+---
+
+## 2. Database Schema
+
+### Core Tables
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                         DATABASE SCHEMA                         │
+└─────────────────────────────────────────────────────────────────┘
+
+┌──────────────┐     ┌──────────────┐     ┌──────────────────┐
+│    users     │     │  hospitals   │     │  workflow_stages │
+├──────────────┤     ├──────────────┤     ├──────────────────┤
+│ id (PK)      │     │ id (PK)      │     │ id (PK)          │
+│ username     │     │ name         │     │ name             │
+│ password_hash│     │ address      │     │ color            │
+│ full_name    │     │ city         │     │ sort_order       │
+│ role         │     │ is_active    │     │ requires_modal   │
+│ is_active    │     └──────────────┘     │ modal_fields     │
+└──────────────┘            │             └──────────────────┘
+       │                    │                     │
+       │              ┌─────┴─────┐               │
+       │              ▼           ▼               │
+       │       ┌──────────┐  ┌──────────────────┐│
+       │       │ doctors  │  │     tickets      ││
+       │       ├──────────┤  ├──────────────────┤│
+       │       │ id (PK)  │  │ id (PK)          ││
+       │       │ name     │  │ uid (auto-gen)   ││
+       │       │ phone    │  │ type             ││
+       │       │ hospital_│──│ action_subtype   ││
+       │       └──────────┘  │ patient_name     ││
+       │              │      │ patient_name_2   ││
+       └──────────────│──────│ assigned_to (FK) ││
+                      └──────│ current_stage_id─┤│
+                             │ doctor_id (FK)   ││
+                             │ hospital_id (FK) ││
+                             │ service_type_id  ││
+                             │ created_by (FK)  ││
+                             └──────────────────┘│
+                                    │            │
+          ┌─────────────────────────┼────────────┘
+          │                         │
+          ▼                         ▼
+┌────────────────────┐    ┌─────────────────────┐
+│ ticket_custom_values│    │ status_transitions  │
+├────────────────────┤    ├─────────────────────┤
+│ ticket_id (FK)     │    │ ticket_id (FK)      │
+│ column_id (FK)     │    │ from_stage_id (FK)  │
+│ value              │    │ to_stage_id (FK)    │
+└────────────────────┘    │ transition_date     │
+          │               │ transition_time     │
+          ▼               │ field_data (JSONB)  │
+┌────────────────────┐    │ changed_by (FK)     │
+│  custom_columns    │    └─────────────────────┘
+├────────────────────┤
+│ id (PK)            │    ┌─────────────────────┐
+│ name               │    │   service_types     │
+│ display_name       │    ├─────────────────────┤
+│ column_type        │    │ id (PK)             │
+│ options (JSONB)    │    │ category            │
+│ sort_order         │    │ name                │
+└────────────────────┘    │ kit                 │
+                          │ requirements        │
+                          │ protocol            │
+                          └─────────────────────┘
+```
+
+### Ticket UID Generation
+
+A PostgreSQL trigger automatically generates UIDs in format `TKT-YYYYMMDD-XXXX`:
+```sql
+-- Example: TKT-20260119-0001, TKT-20260119-0002
+BEFORE INSERT trigger calls generate_ticket_uid()
+```
+
+---
+
+## 3. User Roles & Permissions (CORRECTED)
+
+> ⚠️ **Important**: The `auth.ts` file contains helper functions that are NOT consistently used across the codebase. This section reflects the ACTUAL behavior based on code analysis.
+
+### Role Definitions
+
+```typescript
+type UserRole = 'admin' | 'manager' | 'customer_success' | 'field_executive'
+```
+
+### Actual Permission Matrix (Verified from Code)
+
+| Action | Admin | Manager | Customer Success | Field Executive |
+|--------|-------|---------|------------------|-----------------|
+| **View All Tickets** | ✅ | ✅ | ✅ | ❌ (assigned only) |
+| **Create Tickets** | ✅ | ✅ | ✅ | ❌ |
+| **Edit Ticket Metadata** | ✅ | ✅ | ✅ | ❌ |
+| **Change Workflow Status** | ✅ | ✅ | ⚠️ (via API bug) | ✅ (own tickets) |
+| **Assign Tickets** | ✅ | ✅ | ❌ | ❌ |
+| **Delete Tickets** | ✅ | ✅ | ❌ | ❌ |
+| **Manage Users** | ✅ | ❌ | ❌ | ❌ |
+| **Manage Settings** | ✅ | ✅ | ❌ | ❌ |
+| **Copy Ticket Details** | ✅ | ✅ | ❌ | ❌ |
+
+### Permission Implementation Locations
+
+| Permission | Checked In | Actual Code |
+|------------|------------|-------------|
+| Create Tickets | `POST /api/tickets` | `canCreateTickets(session.role)` ✅ |
+| Edit Metadata | `PATCH /api/tickets/[id]` | Inline role check (admin/manager/CS) ✅ |
+| Change Status | `POST /api/status-transitions` | **NO ROLE CHECK** ⚠️ |
+| Delete Tickets | `DELETE /api/tickets/[id]` | `canEditTickets(session.role)` ✅ |
+| Settings Access | `middleware.ts` | roleRoutes mapping ✅ |
+
+---
+
+## 4. Critical Issues Identified
+
+### 🔴 Issue #1: Status Transitions API Has No Role-Based Permission Check
+
+**File**: `src/app/api/status-transitions/route.ts`
+
+```typescript
+// Lines 61-69 - Only checks for session, NOT role
+export async function POST(request: NextRequest) {
+    const session = await getSession()
+    if (!session) { ... } // Only auth check, no role check!
+    
+    // ANY authenticated user can change ANY ticket's status
+}
+```
+
+**Impact**: A `customer_success` user could change ticket status via direct API call, bypassing UI restrictions.
+
+**Fix Required**: Add role check similar to:
+```typescript
+const canChangeStatus = 
+    session.role === 'admin' || 
+    session.role === 'manager' ||
+    (session.role === 'field_executive' && ticket.assigned_to === session.id)
+```
+
+---
+
+### 🔴 Issue #2: auth.ts Helper `canEditTickets()` Is Misleading
+
+**File**: `src/lib/auth.ts`
+
+```typescript
+// Line 122-124
+export function canEditTickets(role: UserRole): boolean {
+    return role === 'admin' || role === 'manager'
+}
+```
+
+**BUT** the actual PATCH API at `src/app/api/tickets/[id]/route.ts` (lines 89-92) allows:
+```typescript
+const canEdit =
+    session.role === 'admin' ||
+    session.role === 'manager' ||
+    session.role === 'customer_success'  // ← Not in canEditTickets()!
+```
+
+**Impact**: Developers using `canEditTickets()` would get wrong behavior. The helper is only used for DELETE, not PATCH.
+
+---
+
+### 🟡 Issue #3: Frontend `canEdit` Check Is Incomplete
+
+**File**: `src/app/(dashboard)/tickets/page.tsx` (line 41)
+
+```typescript
+const canEdit = currentUser?.role === 'admin' || currentUser?.role === 'manager'
+```
+
+This hides UI elements from `customer_success`, but they CAN edit via the detail page!
+
+**Impact**: Inconsistent user experience - CS users see "view only" on list but can edit on detail page.
+
+---
+
+### 🟡 Issue #4: Session Token Is Base64-Encoded, Not Signed
+
+**File**: `src/lib/auth.ts` (lines 18-21)
+
+```typescript
+function encodeSession(data: SessionData): string {
+    return Buffer.from(JSON.stringify(data)).toString('base64')
+}
+```
+
+**Security Risk**: Anyone who sees the session cookie can decode it and see the role. If they could forge a cookie (difficult but possible with certain vulnerabilities), they could escalate privileges.
+
+**Recommendation**: Use proper JWT with signature verification.
+
+---
+
+### 🟡 Issue #5: Missing Check for Ticket Ownership in Status Changes
+
+Even for Field Executives, the status-transitions API doesn't verify they own the ticket:
+
+```typescript
+// This check happens in PATCH /api/tickets/[id] but NOT in POST /api/status-transitions
+if (session.role === 'field_executive') {
+    if (!ticket || ticket.assigned_to !== session.id) { ... }
+}
+```
+
+---
+
+## 5. Ticket Creation Feature - Complete Flow
+
+### 5.1 Frontend Form Fields
+
+**File**: `src/app/(dashboard)/tickets/new/page.tsx`
+
+| Field | Type | Required | Validation |
+|-------|------|----------|------------|
+| `type` | Radio (action/query/info) | ✅ | Enum check |
+| `action_subtype` | Buttons | If type='action' | diagnostics/therapeutics |
+| `service_type_id` | Dropdown | If action_subtype | ServiceType UUID |
+| `patient_name` | Input | ❌ | Max 5000 chars |
+| `patient_name_2` | Input | ❌ | Optional second patient |
+| `patient_age_1` | Number | ❌ | Parsed to integer |
+| `patient_age_2` | Number | ❌ | Parsed to integer |
+| `hospital_id` | SearchableSelect | ✅ | Hospital UUID |
+| `doctor_id` | Select | ❌ | Doctor UUID, filtered by hospital |
+| `original_message` | Textarea | ✅ | Min 1, Max 5000 chars |
+
+### 5.2 API Processing
+
+**Endpoint**: `POST /api/tickets`
+
+```
+1. Validate session exists
+2. Check canCreateTickets(session.role)
+3. Validate required fields: type, original_message, hospital_id
+4. If type='action': require action_subtype
+5. Get default workflow stage (first active by sort_order)
+6. INSERT into tickets table with:
+   - All form fields
+   - current_stage_id = default stage
+   - created_by = session.id
+7. Return ticket with related data (doctor, hospital, stage, service_type)
+```
+
+### 5.3 Data Flow Diagram
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                        TICKET LIFECYCLE                                  │
+└─────────────────────────────────────────────────────────────────────────┘
+
+  ┌──────────────┐     ┌───────────────┐     ┌──────────────────┐
+  │   WhatsApp   │────▶│  CS Agent     │────▶│  /tickets/new    │
+  │   Message    │     │  Receives Msg │     │  Create Form     │
+  └──────────────┘     └───────────────┘     └────────┬─────────┘
+                                                      │
+                                        POST /api/tickets
+                                                      │
+                                                      ▼
+  ┌─────────────────────────────────────────────────────────────────┐
+  │                        tickets TABLE                            │
+  │  uid: TKT-20260119-0001                                         │
+  │  type: action, action_subtype: diagnostics                      │
+  │  current_stage_id: "New" stage                                  │
+  │  created_by: CS agent's user ID                                 │
+  └────────────────────────────┬────────────────────────────────────┘
+                               │
+          ┌────────────────────┼────────────────────┐
+          │                    │                    │
+          ▼                    ▼                    ▼
+  ┌───────────────┐   ┌───────────────┐    ┌───────────────────┐
+  │  /tickets     │   │ /tickets/[id] │    │ Status Change     │
+  │  List View    │   │ Detail View   │    │ Modal             │
+  │               │   │               │    │                   │
+  │ • Filter      │   │ • Edit form   │    │ • Select date     │
+  │ • Sort        │   │ • Timeline    │    │ • Select time     │
+  │ • Copy        │   │ • Custom      │    │ • Modal fields    │
+  │ • Status      │   │   fields      │    │ • Assign FE       │
+  └───────────────┘   └───────────────┘    └─────────┬─────────┘
+                                                     │
+                                    POST /api/status-transitions
+                                                     │
+                                                     ▼
+                               ┌───────────────────────────────────┐
+                               │      status_transitions TABLE     │
+                               │  Records: from_stage, to_stage,   │
+                               │  date, time, field_data, changed  │
+                               └───────────────────────────────────┘
+```
+
+---
+
+## 6. Where Ticket Data Is Used
+
+### 6.1 Tickets List Page (`/tickets`)
+
+- **Display**: uid, type, patient_name, doctor, hospital, current_stage, created_at
+- **Actions**: Status change, assignment change, copy to clipboard
+- **Filtering**: type, action_subtype, stage_id, search (uid/message/patient)
+- **Role-based**: admin/manager see edit controls, others see read-only
+
+### 6.2 Ticket Detail Page (`/tickets/[id]`)
+
+- **Metadata Card**: Patient info, hospital, doctor, service type details
+- **Message Card**: Original WhatsApp message
+- **Workflow Card**: Current status, assignment, status change buttons
+- **Timeline**: Status transition history with dates and who changed
+- **Custom Fields**: Dynamic fields based on custom_columns config
+
+### 6.3 Status Change Modal
+
+- Shown when changing status (ALL status changes trigger modal)
+- Collects: transition_date, transition_time, and configured modal_fields
+- Creates status_transitions record
+- Updates ticket's current_stage_id and any special fields (assigned_to, sent_to_lab_id)
+
+### 6.4 Copy to Clipboard (WhatsApp Sharing)
+
+Generates formatted text with:
+- Service type and action
+- Ticket UID
+- Patient names and ages
+- Hospital name
+- Pickup location and address
+- Date
+- Kit, requirements, protocol from service_type
+
+---
+
+## 7. Recommendations for Improvement
+
+### 🔴 High Priority (Security/Bugs)
+
+1. **Add role check to status-transitions API**
+   ```typescript
+   // In POST /api/status-transitions
+   const canChangeStatus = 
+       session.role === 'admin' || 
+       session.role === 'manager' ||
+       (session.role === 'field_executive' && ticket.assigned_to === session.id)
+   
+   if (!canChangeStatus) {
+       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+   }
+   ```
+
+2. **Align auth.ts helpers with actual implementation**
+   - Either update `canEditTickets()` to include customer_success
+   - Or remove customer_success from PATCH API
+   - Document intent clearly
+
+3. **Move to JWT for session tokens**
+   - Use signed tokens to prevent tampering
+   - Consider adding refresh token flow
+
+### 🟡 Medium Priority (UX/Consistency)
+
+4. **Consistent UI permissions across pages**
+   - Update tickets list page `canEdit` to match detail page logic
+   - Customer Success should see consistent experience
+
+5. **Add confirmation for destructive actions**
+   - Status rollback should require confirmation
+   - Consider preventing backward status movement
+
+6. **Improve doctor filtering**
+   - Currently fetches all doctors, then filters by hospital
+   - Should filter server-side for better performance
+
+### 🟢 Low Priority (Enhancements)
+
+7. **Add audit logging**
+   - Track who viewed sensitive data
+   - Log all status changes with IP
+
+8. **Field validation improvements**
+   - Age validation (0-150 range)
+   - Phone number format validation for doctors
+   - WhatsApp message pattern detection
+
+---
+
+## 8. TypeScript Types Reference
+
+### Core Types
+
+```typescript
+interface Ticket {
+    id: string
+    uid: string                           // Auto: TKT-YYYYMMDD-XXXX
+    type: 'action' | 'query' | 'info'
+    original_message: string
+    action_subtype?: 'diagnostics' | 'therapeutics'
+    patient_name?: string
+    patient_name_2?: string
+    patient_age_1?: number
+    patient_age_2?: number
+    doctor_id: string
+    doctor?: Doctor
+    hospital_id: string
+    hospital?: Hospital
+    assigned_to: string | null
+    assigned_user?: User
+    current_stage_id: string | null
+    current_stage?: WorkflowStage
+    collection_location: 'hospital' | 'home' | null
+    collection_address: string | null
+    service_type_id: string | null
+    service_type?: ServiceType
+    created_by: string
+    creator?: User
+    created_at: string
+    updated_at: string
+    status_transitions?: StatusTransition[]
+    sent_to_lab_id?: string
+    lab?: Lab
+    custom_values?: TicketCustomValue[]
+}
+
+interface WorkflowStage {
+    id: string
+    name: string
+    color: string                         // Hex color for badge
+    sort_order: number
+    is_active: boolean
+    requires_modal: boolean               // Always TRUE for all stages now
+    modal_fields: ModalFieldConfig[]      // Dynamic fields for modal
+}
+
+interface StatusTransition {
+    id: string
+    ticket_id: string
+    from_stage_id: string | null
+    to_stage_id: string
+    from_stage?: WorkflowStage
+    to_stage?: WorkflowStage
+    transition_date: string
+    transition_time: string | null
+    field_data: Record<string, any>       // JSONB data from modal
+    changed_by: string
+    changer?: User
+    created_at: string
+}
+
+interface ServiceType {
+    id: string
+    category: 'diagnostics' | 'therapeutics'
+    name: string
+    kit: string | null
+    requirements: string | null
+    protocol: string | null
+}
+```
+
+---
+
+## 9. API Endpoints Reference
+
+### Ticket Operations
+
+| Method | Endpoint | Auth | Role Check | Purpose |
+|--------|----------|------|------------|---------|
+| GET | `/api/tickets` | ✅ | FE sees only assigned | List tickets |
+| POST | `/api/tickets` | ✅ | `canCreateTickets()` | Create ticket |
+| GET | `/api/tickets/[id]` | ✅ | FE sees only assigned | Get single ticket |
+| PATCH | `/api/tickets/[id]` | ✅ | Inline check | Update ticket |
+| DELETE | `/api/tickets/[id]` | ✅ | `canEditTickets()` | Delete ticket |
+
+### Status Operations
+
+| Method | Endpoint | Auth | Role Check | Purpose |
+|--------|----------|------|------------|---------|
+| GET | `/api/status-transitions` | ✅ | None | List transitions |
+| POST | `/api/status-transitions` | ✅ | ⚠️ **NONE** | Create transition |
+
+### Supporting Endpoints
+
+| Method | Endpoint | Purpose |
+|--------|----------|---------|
+| GET | `/api/hospitals` | List hospitals |
+| GET | `/api/doctors` | List doctors (filter by hospital_id) |
+| GET | `/api/service-types` | List service types |
+| GET | `/api/workflow-stages` | List workflow stages |
+| GET | `/api/custom-columns` | List custom columns |
+| GET | `/api/field-visibility` | Get visibility settings |
+| GET | `/api/assignable-users` | Get users for assignment |
+| GET | `/api/labs` | List laboratories |
+| GET | `/api/auth/me` | Get current user session |
+
+---
+
+## 10. Default Workflow Stages
+
+```sql
+('New', '#6b7280', 0),           -- Gray
+('Assigned', '#3b82f6', 1),      -- Blue (triggers FE assignment)
+('In Progress', '#f59e0b', 2),   -- Amber
+('Sample Collected', '#8b5cf6', 3), -- Purple
+('Completed', '#10b981', 4),     -- Green
+('Cancelled', '#ef4444', 5);     -- Red
+```
+
+Additional stages from migration (if applied):
+- Sample Sent To (triggers lab selection)
+- Sample Received
+- Analyzed
+- Report Received
+- Report Submission
+
+---
+
+*Document generated: 2026-01-19 | Analysis completed by reviewing actual source code, not just documentation.*

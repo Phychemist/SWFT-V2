@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find:*)",
+      "Bash(wc:*)",
+      "Bash(npx next build)",
+      "Bash(ls -la \"e:\\\\MPB\\\\swft\\\\src\\\\app\\\\api\\\\hospitals\"\" 2>/dev/null || echo \"No hospitals directory \")",
+      "Bash(grep:*)",
+      "Bash(git -C \"e:/MPB/swft\" log --all --oneline --name-only)",
+      "Bash(git -C \"e:/MPB/swft\" log --all --oneline)",
+      "Bash(git -C \"e:/MPB/swft\" show a55debf --name-only)",
+      "Bash(npx tsc:*)",
+      "Bash(npm run build:*)",
+      "Bash(npx supabase db diff:*)",
+      "Bash(git diff:*)",
+      "Bash(ls:*)",
+      "Bash(head:*)",
+      "Bash(node:*)",
+      "Bash(git fetch *)",
+      "Bash(git ls-tree *)"
+    ]
+  }
+}

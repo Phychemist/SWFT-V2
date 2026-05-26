@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls:*)",
+      "Bash(git commit:*)",
+      "Bash(tail:*)"
+    ],
+    "additionalDirectories": [
+      "e:\\MPB\\SERAGEN\\swft\\src\\app\\api\\admin"
+    ]
+  }
+}
