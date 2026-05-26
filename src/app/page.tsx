@@ -20,5 +20,9 @@ export default async function Home() {
     redirect('/scientist')
   }
 
+  if (session.role === 'accountant') {
+    redirect('/accountant/funds')
+  }
+
   redirect('/dashboard')
 }
