@@ -98,14 +98,14 @@ CREATE POLICY "accountant can insert allocations"
 CREATE POLICY "managers can view own allocations"
   ON public.fund_allocations FOR SELECT
   USING (
-    user_id = (SELECT id FROM public.users WHERE email = auth.jwt() ->> 'email')
+    user_id = auth.uid()
     AND auth.jwt() ->> 'role' = 'manager'
   );
 
 CREATE POLICY "field_execs can view own allocations"
   ON public.fund_allocations FOR SELECT
   USING (
-    user_id = (SELECT id FROM public.users WHERE email = auth.jwt() ->> 'email')
+    user_id = auth.uid()
     AND auth.jwt() ->> 'role' = 'field_executive'
   );
 
@@ -212,11 +212,11 @@ CREATE POLICY "accountant can review claims"
 
 CREATE POLICY "users can view own claims"
   ON public.expense_claims FOR SELECT
-  USING (claimant_id = (SELECT id FROM public.users WHERE email = auth.jwt() ->> 'email'));
+  USING (claimant_id = auth.uid());
 
 CREATE POLICY "users can submit own claims"
   ON public.expense_claims FOR INSERT
-  WITH CHECK (claimant_id = (SELECT id FROM public.users WHERE email = auth.jwt() ->> 'email'));
+  WITH CHECK (claimant_id = auth.uid());
 
 
 -- ─────────────────────────────────────────────────────────────
@@ -368,7 +368,7 @@ CREATE POLICY "backoffice can allocate stock"
 CREATE POLICY "FE can view own allocations"
   ON public.inventory_allocations FOR SELECT
   USING (
-    to_user_id = (SELECT id FROM public.users WHERE email = auth.jwt() ->> 'email')
+    to_user_id = auth.uid()
     AND auth.jwt() ->> 'role' = 'field_executive'
   );
 
@@ -406,13 +406,13 @@ CREATE POLICY "backoffice and accountant can read consumptions"
 CREATE POLICY "FE can view own consumptions"
   ON public.inventory_consumptions FOR SELECT
   USING (
-    fe_id = (SELECT id FROM public.users WHERE email = auth.jwt() ->> 'email')
+    fe_id = auth.uid()
   );
 
 CREATE POLICY "FE can update own consumptions for override"
   ON public.inventory_consumptions FOR UPDATE
   USING (
-    fe_id = (SELECT id FROM public.users WHERE email = auth.jwt() ->> 'email')
+    fe_id = auth.uid()
     AND auth.jwt() ->> 'role' = 'field_executive'
   );
 
@@ -426,9 +426,8 @@ CREATE POLICY "system can insert consumptions"
 -- ─────────────────────────────────────────────────────────────
 
 -- 1. Create a default Accountant account (hashing password 'Accountant@1234')
-INSERT INTO public.users (email, username, password_hash, full_name, role)
+INSERT INTO public.users (username, password_hash, full_name, role)
 VALUES (
-  'accountant@swft.dev',
   'accountant',
   '$2b$12$Kk0GpeV1jV6F7z2X9H3i/O7a/n8m5G2Z9l8m6C8O1gE1wE2wE3wE4', -- Hashed value of 'Accountant@1234'
   'Test Accountant',
