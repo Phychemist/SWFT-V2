@@ -220,19 +220,26 @@ export default function BackofficeInventoryPage() {
 
     // Mount hooks
     useEffect(() => {
-        fetchItems()
         fetchStaff()
     }, [])
 
     useEffect(() => {
         if (activeTab === 'warehouse') {
             fetchItems()
-        } else if (activeTab === 'fe_holdings') {
+        }
+    }, [activeTab])
+
+    useEffect(() => {
+        if (activeTab === 'fe_holdings') {
             fetchFEHoldings(selectedFE)
-        } else if (activeTab === 'movement') {
-            fetchMovementLogs()
         }
     }, [activeTab, selectedFE, fetchFEHoldings])
+
+    useEffect(() => {
+        if (activeTab === 'movement') {
+            fetchMovementLogs()
+        }
+    }, [activeTab])
 
     // Edit item parameters
     const handleOpenEdit = (item: InventoryItem) => {

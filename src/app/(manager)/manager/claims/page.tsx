@@ -300,7 +300,7 @@ export default function ManagerClaimsPage() {
             <div className="bg-white border-b border-[var(--border-light)] sticky top-0 z-10 px-4 py-4">
                 <div className="max-w-4xl mx-auto flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                        <Link href="/manager" className="p-2 -ml-2 rounded-full hover:bg-[var(--gray-50)] text-gray-600 transition-colors">
+                        <Link href="/dashboard" className="p-2 -ml-2 rounded-full hover:bg-[var(--gray-50)] text-gray-600 transition-colors">
                             <ArrowLeft size={20} />
                         </Link>
                         <div>
