@@ -95,7 +95,28 @@ export async function POST(request: NextRequest) {
     }
 
     const totalAllocated = (allocData || []).reduce((acc, row) => acc + Number(row.amount), 0)
-    const availableBalance = totalFund - totalAllocated
+
+    // Fetch total approved manager claims sum (deducted directly from Seragen main account)
+    const { data: claimsData, error: claimsError } = await supabase
+      .from('expense_claims')
+      .select('total_amount, claimant:users!claimant_id(role)')
+      .eq('status', 'approved')
+
+    if (claimsError) {
+      return NextResponse.json<ApiResponse<null>>(
+        { success: false, error: claimsError.message },
+        { status: 500 }
+      )
+    }
+
+    const totalApprovedManagerExpenses = (claimsData || [])
+      .filter((row: any) => {
+        const claimant = Array.isArray(row.claimant) ? row.claimant[0] : row.claimant
+        return claimant?.role === 'manager'
+      })
+      .reduce((acc, row) => acc + Number(row.total_amount), 0)
+
+    const availableBalance = totalFund - totalAllocated - totalApprovedManagerExpenses
 
     const batchTotalAmount = entries.reduce((acc, entry) => acc + entry.amount, 0)
     if (batchTotalAmount > availableBalance) {
