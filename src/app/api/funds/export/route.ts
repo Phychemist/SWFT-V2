@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
     const userId = url.searchParams.get('user_id')
 
     const supabase = createServiceClient()
-    const wb = XLSX.book_new()
+    const wb = XLSX.utils.book_new()
     let hasSheet = false
 
     // 1. Generate Allocations Sheet

@@ -25,7 +25,8 @@ export async function GET() {
     // 1. Fetch total fund entries sum
     const { data: fundsData, error: fundsError } = await supabase
       .from('funds')
-      .select('amount')
+      .select('amount, entry_date')
+      .order('entry_date', { ascending: false })
 
     if (fundsError) {
       return NextResponse.json<ApiResponse<null>>(
@@ -35,6 +36,7 @@ export async function GET() {
     }
 
     const total_fund = (fundsData || []).reduce((acc, row) => acc + Number(row.amount), 0)
+    const last_entry_date = (fundsData && fundsData.length > 0) ? fundsData[0].entry_date : null
 
     // 2. Fetch total allocated sum
     const { data: allocData, error: allocError } = await supabase
@@ -51,12 +53,13 @@ export async function GET() {
     const funds_used = (allocData || []).reduce((acc, row) => acc + Number(row.amount), 0)
     const available_seragen_account_balance = total_fund - funds_used
 
-    return NextResponse.json<ApiResponse<{ total_fund: number; funds_used: number; available_seragen_account_balance: number }>>({
+    return NextResponse.json<ApiResponse<{ total_fund: number; funds_used: number; available_seragen_account_balance: number; last_entry_date: string | null }>>({
       success: true,
       data: {
         total_fund,
         funds_used,
         available_seragen_account_balance,
+        last_entry_date,
       },
     })
   } catch (error) {

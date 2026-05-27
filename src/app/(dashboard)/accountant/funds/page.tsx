@@ -25,6 +25,7 @@ interface FundStats {
     total_fund: number
     funds_used: number
     available_seragen_account_balance: number
+    last_entry_date?: string | null
 }
 
 interface UserBalance {
@@ -477,294 +478,279 @@ export default function FundManagementPage() {
 
     return (
         <div className="animate-fade-in space-y-6">
-            {/* Header section with Premium rose accents */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-rose-100 pb-5">
+            {/* Header section - Perfectly aligned with HTML mockup */}
+            <div className="page-hdr flex items-start justify-between pb-5 border-b border-gray-200">
                 <div>
-                    <div className="flex items-center gap-2">
-                        <span className="p-1.5 rounded-lg bg-pink-50 text-pink-600">
-                            <Coins size={20} />
-                        </span>
-                        <h1 className="text-2xl font-bold text-gray-900">Fund Management</h1>
-                    </div>
+                    <h1 className="text-2xl font-bold text-gray-900">Fund Management</h1>
                     <p className="text-gray-500 text-sm mt-1">
-                        Track central liquidity pools, disburse advance balances, and monitor approved expense timelines.
+                        Track Seragen account funds, allocations and expense activity
                     </p>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-3">
-                    <Button 
+                <div className="hdr-actions flex gap-2.5 items-center shrink-0">
+                    <button 
                         onClick={() => {
                             setReceiveError('')
                             setIsReceiveModalOpen(true)
                         }}
-                        className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium shadow-sm transition-colors duration-200"
-                        leftIcon={<Plus size={16} />}
+                        className="btn btn-outline border border-gray-300 text-gray-700 hover:bg-gray-50 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-150 cursor-pointer"
                     >
                         Receive Funds
-                    </Button>
-                    <Button 
+                    </button>
+                    <button 
                         onClick={() => {
                             setAllocationEntries([{ user_id: '', amount: '', remarks: '' }])
                             setAllocateError('')
                             setIsAllocateModalOpen(true)
                         }}
-                        className="bg-pink-600 hover:bg-pink-700 text-white font-medium shadow-sm transition-colors duration-200"
-                        leftIcon={<Plus size={16} />}
+                        className="btn btn-primary bg-pink-600 hover:bg-pink-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-150 shadow-sm cursor-pointer"
                     >
                         Allocate Funds
-                    </Button>
+                    </button>
                 </div>
             </div>
 
-            {/* Stats Cards Section - Rose Theme */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <Card className="border border-rose-50 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
-                    <div className="absolute top-0 left-0 w-full h-[3px] bg-pink-500" />
-                    <CardContent className="p-6">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-gray-500 text-xs font-semibold uppercase tracking-wider">Total Seragen Funds Pool</p>
-                                <h3 className="text-2xl font-bold text-gray-900 mt-2">
-                                    {loadingStats ? '...' : formatCurrency(stats.total_fund)}
-                                </h3>
-                            </div>
-                            <div className="w-11 h-11 rounded-xl bg-rose-50 text-pink-600 flex items-center justify-center shadow-inner group-hover:scale-105 transition-transform">
-                                <Wallet size={20} />
-                            </div>
+            {/* Stats Grid - Aligned with Left Icon & Right Text Layout */}
+            <div className="stats-grid-3 grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div className="stat-card bg-white border border-gray-200 rounded-xl p-5 shadow-sm flex items-center gap-3.5">
+                    <div className="stat-icon w-11 h-11 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 text-xl">
+                        <Wallet size={20} />
+                    </div>
+                    <div className="stat-body">
+                        <div className="stat-label text-xs font-semibold text-gray-400 uppercase tracking-wider">Total Fund Received</div>
+                        <div className="stat-value text-2xl font-bold text-gray-900 mt-1">
+                            {loadingStats ? '...' : formatCurrency(stats.total_fund)}
                         </div>
-                        <div className="flex items-center gap-1 mt-4 text-xs text-gray-500">
-                            <span className="text-emerald-600 font-bold flex items-center gap-0.5">
-                                <TrendingUp size={12} />
-                                Direct pool
-                            </span>
-                            <span>capital deposits</span>
+                        <div className="stat-sub text-[11.5px] text-gray-400 mt-0.5">
+                            {stats.last_entry_date ? `Last entry: ${formatDate(stats.last_entry_date)}` : 'No entries'}
                         </div>
-                    </CardContent>
-                </Card>
+                    </div>
+                </div>
 
-                <Card className="border border-rose-50 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
-                    <div className="absolute top-0 left-0 w-full h-[3px] bg-amber-500" />
-                    <CardContent className="p-6">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-gray-500 text-xs font-semibold uppercase tracking-wider">Total Allocated Capital</p>
-                                <h3 className="text-2xl font-bold text-gray-900 mt-2">
-                                    {loadingStats ? '...' : formatCurrency(stats.funds_used)}
-                                </h3>
-                            </div>
-                            <div className="w-11 h-11 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shadow-inner group-hover:scale-105 transition-transform">
-                                <Receipt size={20} />
-                            </div>
+                <div className="stat-card bg-white border border-gray-200 rounded-xl p-5 shadow-sm flex items-center gap-3.5">
+                    <div className="stat-icon w-11 h-11 rounded-full bg-pink-50 text-pink-500 flex items-center justify-center shrink-0 text-xl">
+                        <TrendingUp size={20} />
+                    </div>
+                    <div className="stat-body">
+                        <div className="stat-label text-xs font-semibold text-gray-400 uppercase tracking-wider">Funds Allocated</div>
+                        <div className="stat-value text-2xl font-bold text-gray-900 mt-1">
+                            {loadingStats ? '...' : formatCurrency(stats.funds_used)}
                         </div>
-                        <div className="flex items-center gap-1 mt-4 text-xs text-gray-500">
-                            <span className="text-pink-600 font-semibold">{staff.length} Active</span>
-                            <span>staff member advances</span>
+                        <div className="stat-sub text-[11.5px] text-gray-400 mt-0.5">
+                            Across {staff.length} team members
                         </div>
-                    </CardContent>
-                </Card>
+                    </div>
+                </div>
 
-                {/* Available Balance: ROSE-PINK highlighted for key focus */}
-                <Card className="border-2 border-pink-100 bg-pink-50/30 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
-                    <div className="absolute top-0 left-0 w-full h-[4px] bg-pink-600" />
-                    <CardContent className="p-6">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-pink-800 text-xs font-bold uppercase tracking-wider">Available Seragen Account Balance</p>
-                                <h3 className="text-3xl font-extrabold text-pink-700 mt-2">
-                                    {loadingStats ? '...' : formatCurrency(stats.available_seragen_account_balance)}
-                                </h3>
-                            </div>
-                            <div className="w-12 h-12 rounded-xl bg-pink-100 text-pink-700 flex items-center justify-center shadow-md group-hover:scale-105 transition-transform">
-                                <Boxes size={22} />
-                            </div>
+                <div className="stat-card bg-white border border-gray-200 rounded-xl p-5 shadow-sm flex items-center gap-3.5">
+                    <div className="stat-icon w-11 h-11 rounded-full bg-pink-50 text-pink-600 flex items-center justify-center shrink-0 text-xl">
+                        <Boxes size={20} />
+                    </div>
+                    <div className="stat-body">
+                        <div className="stat-label text-xs font-semibold text-gray-400 uppercase tracking-wider">Available Seragen Account Balance</div>
+                        <div className="stat-value text-2xl font-bold text-pink-600 mt-1">
+                            {loadingStats ? '...' : formatCurrency(stats.available_seragen_account_balance)}
                         </div>
-                        <div className="flex items-center gap-1 mt-3 text-xs text-pink-900/70">
-                            <span className="font-semibold text-pink-600">Immediate liquid capacity</span>
-                            <span>for future dispersals</span>
+                        <div className="stat-sub text-[11.5px] text-gray-400 mt-0.5">
+                            Free to allocate
                         </div>
-                    </CardContent>
-                </Card>
+                    </div>
+                </div>
             </div>
 
-            {/* Custom Tab Navigation with rose-pink active highlights */}
-            <div className="bg-white border border-rose-100/60 rounded-xl p-1 shadow-sm flex flex-wrap gap-1">
+            {/* Pill Tabs - Aligned with Mockup */}
+            <div className="tabs-pill bg-gray-100 p-1 rounded-lg flex gap-1 w-fit mb-5">
                 <button
                     onClick={() => setActiveTab('activity')}
-                    className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
+                    className={`tab-pill px-4.5 py-1.5 text-sm font-medium rounded-md transition-all duration-150 ${
                         activeTab === 'activity'
-                            ? 'bg-pink-600 text-white shadow-sm font-bold'
-                            : 'text-gray-600 hover:bg-gray-50 hover:text-pink-600'
+                            ? 'bg-white text-gray-900 shadow-sm font-semibold'
+                            : 'text-gray-600 hover:text-gray-900'
                     }`}
                 >
-                    <Receipt size={16} />
                     Activity Log
                 </button>
                 <button
                     onClick={() => setActiveTab('balances')}
-                    className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
+                    className={`tab-pill px-4.5 py-1.5 text-sm font-medium rounded-md transition-all duration-150 ${
                         activeTab === 'balances'
-                            ? 'bg-pink-600 text-white shadow-sm font-bold'
-                            : 'text-gray-600 hover:bg-gray-50 hover:text-pink-600'
+                            ? 'bg-white text-gray-900 shadow-sm font-semibold'
+                            : 'text-gray-600 hover:text-gray-900'
                     }`}
                 >
-                    <Users size={16} />
                     User Balances
                 </button>
                 <button
                     onClick={() => setActiveTab('entries')}
-                    className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
+                    className={`tab-pill px-4.5 py-1.5 text-sm font-medium rounded-md transition-all duration-150 ${
                         activeTab === 'entries'
-                            ? 'bg-pink-600 text-white shadow-sm font-bold'
-                            : 'text-gray-600 hover:bg-gray-50 hover:text-pink-600'
+                            ? 'bg-white text-gray-900 shadow-sm font-semibold'
+                            : 'text-gray-600 hover:text-gray-900'
                     }`}
                 >
-                    <Wallet size={16} />
                     Fund Entries
                 </button>
                 <button
                     onClick={() => setActiveTab('allocations')}
-                    className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
+                    className={`tab-pill px-4.5 py-1.5 text-sm font-medium rounded-md transition-all duration-150 ${
                         activeTab === 'allocations'
-                            ? 'bg-pink-600 text-white shadow-sm font-bold'
-                            : 'text-gray-600 hover:bg-gray-50 hover:text-pink-600'
+                            ? 'bg-white text-gray-900 shadow-sm font-semibold'
+                            : 'text-gray-600 hover:text-gray-900'
                     }`}
                 >
-                    <Boxes size={16} />
-                    Allocations Log
+                    Allocations
                 </button>
             </div>
 
             {/* TAB CONTENTS */}
-            <div className="bg-white border border-rose-100/60 rounded-2xl shadow-sm p-6 min-h-[400px]">
+            <div className="bg-white border border-gray-200 rounded-2xl shadow-sm p-6 min-h-[400px]">
                 
                 {/* 1. ACTIVITY LOG TAB */}
                 {activeTab === 'activity' && (
                     <div className="space-y-6">
-                        {/* TOOLBAR: Export lives inside the toolbar! */}
-                        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-gray-50/50 p-4 rounded-xl border border-gray-100">
-                            <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 flex-1">
-                                <div className="relative">
-                                    <span className="absolute left-3 top-2.5 text-gray-400">
-                                        <Search size={16} />
-                                    </span>
-                                    <Input 
-                                        placeholder="Search claimant..." 
-                                        className="pl-9 h-10 text-sm border-gray-200"
-                                        value={activitySearch}
-                                        onChange={(e) => setActivitySearch(e.target.value)}
-                                    />
+                        <div className="table-toolbar flex items-center justify-between gap-4 bg-gray-50/50 p-4 rounded-xl border border-gray-100">
+                            <div className="toolbar-left flex items-center gap-2.5 flex-wrap flex-1">
+                                <div style={{ display: 'flex', gap: '6px', background: 'var(--gray-100)', borderRadius: '8px', padding: '3px' }}>
+                                    <button 
+                                        onClick={() => setActivityType('all')} 
+                                        className={`tab-pill px-3 py-1 text-xs font-semibold rounded-md transition-all ${
+                                            activityType === 'all' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600'
+                                        }`}
+                                    >
+                                        All
+                                    </button>
+                                    <button 
+                                        onClick={() => setActivityType('allocation')} 
+                                        className={`tab-pill px-3 py-1 text-xs font-semibold rounded-md transition-all ${
+                                            activityType === 'allocation' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600'
+                                        }`}
+                                    >
+                                        Allocations
+                                    </button>
+                                    <button 
+                                        onClick={() => setActivityType('expense')} 
+                                        className={`tab-pill px-3 py-1 text-xs font-semibold rounded-md transition-all ${
+                                            activityType === 'expense' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600'
+                                        }`}
+                                    >
+                                        Expenses
+                                    </button>
                                 </div>
-                                
-                                <Select 
-                                    value={activityType}
-                                    onChange={(e) => setActivityType(e.target.value)}
-                                    className="h-10 text-sm border-gray-200"
-                                >
-                                    <option value="all">All Transactions</option>
-                                    <option value="allocation">Allocations Only</option>
-                                    <option value="expense">Expenses Only</option>
-                                </Select>
 
-                                <div className="flex items-center gap-1.5 bg-white px-2 py-1 rounded-lg border border-gray-200 h-10">
-                                    <Calendar size={14} className="text-gray-400 shrink-0" />
+                                <div className="date-pair flex items-center gap-2">
                                     <input 
                                         type="date" 
-                                        className="text-xs focus:outline-none w-full bg-transparent text-gray-700" 
+                                        className="h-9 px-3 border border-gray-300 rounded-lg text-xs bg-white text-gray-700 focus:outline-none focus:border-pink-400" 
                                         value={activityFrom}
                                         onChange={(e) => setActivityFrom(e.target.value)}
+                                        style={{ width: '130px' }}
                                     />
-                                </div>
-
-                                <div className="flex items-center gap-1.5 bg-white px-2 py-1 rounded-lg border border-gray-200 h-10">
-                                    <Calendar size={14} className="text-gray-400 shrink-0" />
+                                    <span className="text-gray-400 text-xs">to</span>
                                     <input 
                                         type="date" 
-                                        className="text-xs focus:outline-none w-full bg-transparent text-gray-700" 
+                                        className="h-9 px-3 border border-gray-300 rounded-lg text-xs bg-white text-gray-700 focus:outline-none focus:border-pink-400" 
                                         value={activityTo}
                                         onChange={(e) => setActivityTo(e.target.value)}
+                                        style={{ width: '130px' }}
                                     />
                                 </div>
+
+                                <Select 
+                                    value={activitySearch}
+                                    onChange={(e) => setActivitySearch(e.target.value)}
+                                    className="h-9 text-xs border-gray-300 rounded-lg max-w-[180px]"
+                                    placeholder="All Users"
+                                >
+                                    <option value="">All Users</option>
+                                    {staff.map(s => (
+                                        <option key={s.id} value={s.full_name}>{s.full_name} ({s.role.replace('_', ' ')})</option>
+                                    ))}
+                                </Select>
                             </div>
 
-                            {/* Export lives strictly inside the Activity Log Toolbar */}
-                            <Button
+                            <button
                                 onClick={handleExcelExport}
-                                className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-sm h-10 shadow-sm shrink-0 duration-150 transition-colors"
-                                leftIcon={<Download size={15} />}
+                                className="btn btn-outline border border-gray-300 hover:bg-gray-50 text-gray-700 text-sm h-9 px-4 py-2 rounded-lg font-medium shadow-sm shrink-0 duration-150 transition-colors flex items-center gap-1.5"
                             >
-                                Export Log
-                            </Button>
+                                <Download size={14} />
+                                Export
+                            </button>
                         </div>
 
                         {/* List/Table */}
-                        <div className="overflow-x-auto border border-gray-100 rounded-xl">
+                        <div className="overflow-x-auto border border-gray-150 rounded-xl shadow-sm">
                             <table className="w-full text-left text-sm text-gray-500">
-                                <thead className="text-xs text-gray-700 uppercase bg-gray-50 border-b border-gray-100">
+                                <thead className="text-xs text-gray-700 uppercase bg-gray-50 border-b border-gray-200">
                                     <tr>
                                         <th className="px-6 py-4">Date</th>
                                         <th className="px-6 py-4">Type</th>
-                                        <th className="px-6 py-4">Staff Member</th>
+                                        <th className="px-6 py-4">User</th>
                                         <th className="px-6 py-4 text-right">Amount</th>
-                                        <th className="px-6 py-4 text-right">Snapshot Balance</th>
-                                        <th className="px-6 py-4">Reference/Remarks</th>
-                                        <th className="px-6 py-4">Logged By</th>
+                                        <th className="px-6 py-4 text-right">Balance at Moment</th>
+                                        <th className="px-6 py-4 text-right">Total Exp. Then</th>
+                                        <th className="px-6 py-4">Reference / Remarks</th>
+                                        <th className="px-6 py-4">Performed By</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-gray-100">
+                                <tbody className="divide-y divide-gray-150 bg-white">
                                     {activityLoading ? (
                                         <tr>
-                                            <td colSpan={7} className="text-center py-12">
+                                            <td colSpan={8} className="text-center py-12">
                                                 <RefreshCw size={24} className="animate-spin text-pink-600 mx-auto" />
                                                 <p className="text-xs text-gray-400 mt-2">Loading financial activity...</p>
                                             </td>
                                         </tr>
                                     ) : activityLogs.length === 0 ? (
                                         <tr>
-                                            <td colSpan={7} className="text-center py-12 text-gray-400 text-xs">
+                                            <td colSpan={8} className="text-center py-12 text-gray-400 text-xs">
                                                 No activity records found matching filters.
                                             </td>
                                         </tr>
                                     ) : (
                                         activityLogs.map((log) => (
                                             <tr key={log.id} className="hover:bg-gray-50/50">
-                                                <td className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap">
-                                                    {formatDate(log.date)}
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    <div className="font-semibold text-gray-900">{formatDate(log.date)}</div>
+                                                    <div className="td-sm text-[11px] text-gray-400 mt-0.5">
+                                                        {new Date(log.date + 'T' + (log.type === 'allocation' ? '12:00:00' : '12:00:00')).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: false })} IST
+                                                    </div>
                                                 </td>
                                                 <td className="px-6 py-4">
                                                     {log.type === 'allocation' ? (
-                                                        <Badge className="bg-pink-50 border border-pink-200 text-pink-600 flex items-center gap-1 w-fit">
-                                                            <ArrowUpRight size={12} />
+                                                        <span className="badge badge-pink bg-pink-50 border border-pink-200 text-pink-600 flex items-center gap-1 w-fit rounded-full px-2.5 py-0.5 text-xs font-semibold">
                                                             Allocation
-                                                        </Badge>
+                                                        </span>
                                                     ) : (
-                                                        <Badge className="bg-amber-50 border border-amber-200 text-amber-600 flex items-center gap-1 w-fit">
-                                                            <ArrowDownLeft size={12} />
-                                                            Expense Claim
-                                                        </Badge>
+                                                        <span className="badge badge-red bg-rose-50 border border-rose-200 text-rose-600 flex items-center gap-1 w-fit rounded-full px-2.5 py-0.5 text-xs font-semibold">
+                                                            Expense
+                                                        </span>
                                                     )}
                                                 </td>
                                                 <td className="px-6 py-4">
                                                     <div>
                                                         <div className="font-semibold text-gray-900">{log.user_name}</div>
-                                                        <div className="text-[10px] text-gray-400 uppercase font-bold tracking-wider mt-0.5">
+                                                        <div className="td-sm text-[11px] text-gray-400 capitalize mt-0.5">
                                                             {log.user_role.replace('_', ' ')}
                                                         </div>
                                                     </div>
                                                 </td>
-                                                <td className="px-6 py-4 text-right font-bold text-gray-900">
+                                                <td className="px-6 py-4 text-right font-bold whitespace-nowrap">
                                                     {log.type === 'allocation' ? (
-                                                        <span className="text-pink-600">+ {formatCurrency(log.amount)}</span>
+                                                        <span className="amt-green text-emerald-600">+ {formatCurrency(log.amount)}</span>
                                                     ) : (
-                                                        <span className="text-amber-600">- {formatCurrency(log.amount)}</span>
+                                                        <span className="amt-red text-red-600">− {formatCurrency(log.amount)}</span>
                                                     )}
                                                 </td>
                                                 <td className="px-6 py-4 text-right text-gray-700 whitespace-nowrap">
-                                                    {log.balance_at_moment !== null ? formatCurrency(log.balance_at_moment) : '-'}
+                                                    {log.balance_at_moment !== null && log.balance_at_moment !== undefined ? formatCurrency(log.balance_at_moment) : '—'}
+                                                </td>
+                                                <td className="px-6 py-4 text-right text-gray-700 whitespace-nowrap">
+                                                    {log.total_expenses_at_moment !== null && log.total_expenses_at_moment !== undefined ? formatCurrency(log.total_expenses_at_moment) : '—'}
                                                 </td>
                                                 <td className="px-6 py-4 max-w-xs truncate text-gray-600" title={log.reference || ''}>
                                                     {log.reference || '-'}
                                                 </td>
-                                                <td className="px-6 py-4 text-xs font-semibold text-gray-600">
+                                                <td className="px-6 py-4 text-xs text-gray-500">
                                                     {log.performed_by_name}
                                                 </td>
                                             </tr>
@@ -783,7 +769,7 @@ export default function FundManagementPage() {
                                     disabled={activityPage <= 1}
                                     onClick={() => setActivityPage(activityPage - 1)}
                                 >
-                                    Previous
+                                    ‹
                                 </Button>
                                 <div className="text-sm text-gray-500 flex items-center px-2">
                                     Page {activityPage} of {activityTotalPages}
@@ -794,7 +780,7 @@ export default function FundManagementPage() {
                                     disabled={activityPage >= activityTotalPages}
                                     onClick={() => setActivityPage(activityPage + 1)}
                                 >
-                                    Next
+                                    ›
                                 </Button>
                             </div>
                         )}
@@ -804,86 +790,71 @@ export default function FundManagementPage() {
                 {/* 2. USER BALANCES TAB */}
                 {activeTab === 'balances' && (
                     <div className="space-y-6">
-                        {/* Balances search toolbar */}
-                        <div className="flex items-center gap-3 bg-gray-50/50 p-4 rounded-xl border border-gray-100 max-w-sm">
-                            <span className="text-gray-400">
-                                <Search size={16} />
-                            </span>
-                            <Input 
-                                placeholder="Search by name or role..." 
-                                className="h-9 border-gray-200 text-sm"
-                                value={balancesSearch}
-                                onChange={(e) => setBalancesSearch(e.target.value)}
-                            />
+                        <div className="table-toolbar flex items-center justify-between gap-4 bg-gray-50/50 p-4 rounded-xl border border-gray-100">
+                            <div className="toolbar-left flex items-center gap-3">
+                                <div className="search-box flex items-center gap-2 bg-white px-3 py-1.5 border border-gray-300 rounded-lg w-[220px]">
+                                    <Search size={14} className="text-gray-400 shrink-0" />
+                                    <input 
+                                        placeholder="Search by name..." 
+                                        className="text-sm focus:outline-none w-full bg-transparent text-gray-700"
+                                        value={balancesSearch}
+                                        onChange={(e) => setBalancesSearch(e.target.value)}
+                                    />
+                                </div>
+                            </div>
                         </div>
 
                         {/* Balances table */}
-                        <div className="overflow-x-auto border border-gray-100 rounded-xl">
+                        <div className="overflow-x-auto border border-gray-150 rounded-xl shadow-sm">
                             <table className="w-full text-left text-sm text-gray-500">
-                                <thead className="text-xs text-gray-700 uppercase bg-gray-50 border-b border-gray-100">
+                                <thead className="text-xs text-gray-700 uppercase bg-gray-50 border-b border-gray-200">
                                     <tr>
-                                        <th className="px-6 py-4">Staff Member</th>
-                                        <th className="px-6 py-4">Role</th>
-                                        <th className="px-6 py-4 text-right">Total Disbursed (Received)</th>
-                                        <th className="px-6 py-4 text-right">Approved Expenses</th>
-                                        <th className="px-6 py-4 text-right">Outstanding Balance</th>
-                                        <th className="px-6 py-4 text-center">Quick Action</th>
+                                        <th className="px-6 py-4">Name / Role</th>
+                                        <th className="px-6 py-4 text-right">Total Funds Received</th>
+                                        <th className="px-6 py-4 text-right">Total Expenses</th>
+                                        <th className="px-6 py-4 text-right">Current Balance</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-gray-100">
+                                <tbody className="divide-y divide-gray-150 bg-white">
                                     {balancesLoading ? (
                                         <tr>
-                                            <td colSpan={6} className="text-center py-12">
+                                            <td colSpan={4} className="text-center py-12">
                                                 <RefreshCw size={24} className="animate-spin text-pink-600 mx-auto" />
                                                 <p className="text-xs text-gray-400 mt-2">Computing team balances...</p>
                                             </td>
                                         </tr>
                                     ) : filteredBalances.length === 0 ? (
                                         <tr>
-                                            <td colSpan={6} className="text-center py-12 text-gray-400 text-xs">
+                                            <td colSpan={4} className="text-center py-12 text-gray-400 text-xs">
                                                 No staff members found matching search.
                                             </td>
                                         </tr>
                                     ) : (
-                                        filteredBalances.map((b) => (
-                                            <tr key={b.user_id} className="hover:bg-gray-50/50">
-                                                <td className="px-6 py-4 font-bold text-gray-900">
-                                                    {b.full_name}
-                                                </td>
-                                                <td className="px-6 py-4 uppercase text-[10px] font-bold tracking-wider">
-                                                    {b.role === 'manager' ? (
-                                                        <Badge className="bg-blue-50 border border-blue-200 text-blue-600">Manager</Badge>
-                                                    ) : (
-                                                        <Badge className="bg-purple-50 border border-purple-200 text-purple-600">Field Exec</Badge>
-                                                    )}
-                                                </td>
-                                                <td className="px-6 py-4 text-right font-medium text-gray-900">
-                                                    {formatCurrency(b.total_received)}
-                                                </td>
-                                                <td className="px-6 py-4 text-right text-gray-600">
-                                                    {formatCurrency(b.total_expenses)}
-                                                </td>
-                                                <td className="px-6 py-4 text-right font-extrabold">
-                                                    {b.current_balance > 0 ? (
-                                                        <span className="text-emerald-600">{formatCurrency(b.current_balance)}</span>
-                                                    ) : b.current_balance < 0 ? (
-                                                        <span className="text-rose-600">{formatCurrency(b.current_balance)}</span>
-                                                    ) : (
-                                                        <span className="text-gray-400">{formatCurrency(b.current_balance)}</span>
-                                                    )}
-                                                </td>
-                                                <td className="px-6 py-4 text-center">
-                                                    <Button
-                                                        onClick={() => handleQuickAllocate(b.user_id)}
-                                                        variant="outline"
-                                                        size="sm"
-                                                        className="border-pink-200 text-pink-600 hover:bg-pink-50 h-8"
-                                                    >
-                                                        Disburse
-                                                    </Button>
-                                                </td>
-                                            </tr>
-                                        ))
+                                        filteredBalances.map((b) => {
+                                            const isNegative = b.current_balance < 0;
+                                            return (
+                                                <tr 
+                                                    key={b.user_id} 
+                                                    className={`hover:bg-gray-50/50 ${isNegative ? 'border-l-[3px] border-red-500 bg-red-50/5' : ''}`}
+                                                >
+                                                    <td className="px-6 py-4">
+                                                        <div className={`font-bold ${isNegative ? 'text-red-600' : 'text-gray-900'}`}>{b.full_name}</div>
+                                                        <div className="td-sm text-[11px] text-gray-400 capitalize mt-1">
+                                                            {b.role.replace('_', ' ')}
+                                                        </div>
+                                                    </td>
+                                                    <td className={`px-6 py-4 text-right font-semibold ${isNegative ? 'text-red-600' : 'text-emerald-600'}`}>
+                                                        {formatCurrency(b.total_received)}
+                                                    </td>
+                                                    <td className={`px-6 py-4 text-right ${isNegative ? 'text-red-600' : 'text-red-600 font-semibold'}`}>
+                                                        {formatCurrency(b.total_expenses)}
+                                                    </td>
+                                                    <td className={`px-6 py-4 text-right font-extrabold ${isNegative ? 'text-red-600' : 'text-gray-800'}`}>
+                                                        {isNegative ? '−' : ''}{formatCurrency(Math.abs(b.current_balance))}
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })
                                     )}
                                 </tbody>
                             </table>
@@ -894,44 +865,39 @@ export default function FundManagementPage() {
                 {/* 3. DIRECT FUND ENTRIES TAB */}
                 {activeTab === 'entries' && (
                     <div className="space-y-6">
-                        {/* Filters */}
-                        <div className="flex items-center gap-3 bg-gray-50/50 p-4 rounded-xl border border-gray-100 max-w-lg">
-                            <div className="flex items-center gap-1.5 bg-white px-2 py-1 rounded-lg border border-gray-200 h-9 flex-1">
-                                <Calendar size={14} className="text-gray-400 shrink-0" />
+                        <div className="table-toolbar flex items-center justify-between gap-4 bg-gray-50/50 p-4 rounded-xl border border-gray-100 max-w-lg">
+                            <div className="toolbar-left date-pair flex items-center gap-2">
                                 <input 
                                     type="date" 
-                                    className="text-xs focus:outline-none w-full bg-transparent text-gray-700" 
+                                    className="h-9 px-3 border border-gray-300 rounded-lg text-xs bg-white text-gray-700 focus:outline-none" 
                                     value={entriesFrom}
                                     onChange={(e) => setEntriesFrom(e.target.value)}
+                                    style={{ width: '130px' }}
                                 />
-                            </div>
-
-                            <span className="text-gray-400 text-xs">to</span>
-
-                            <div className="flex items-center gap-1.5 bg-white px-2 py-1 rounded-lg border border-gray-200 h-9 flex-1">
-                                <Calendar size={14} className="text-gray-400 shrink-0" />
+                                <span className="text-gray-400 text-xs">to</span>
                                 <input 
                                     type="date" 
-                                    className="text-xs focus:outline-none w-full bg-transparent text-gray-700" 
+                                    className="h-9 px-3 border border-gray-300 rounded-lg text-xs bg-white text-gray-700 focus:outline-none" 
                                     value={entriesTo}
                                     onChange={(e) => setEntriesTo(e.target.value)}
+                                    style={{ width: '130px' }}
                                 />
                             </div>
                         </div>
 
                         {/* Direct pool entries table */}
-                        <div className="overflow-x-auto border border-gray-100 rounded-xl">
+                        <div className="overflow-x-auto border border-gray-150 rounded-xl shadow-sm">
                             <table className="w-full text-left text-sm text-gray-500">
-                                <thead className="text-xs text-gray-700 uppercase bg-gray-50 border-b border-gray-100">
+                                <thead className="text-xs text-gray-700 uppercase bg-gray-50 border-b border-gray-200">
                                     <tr>
                                         <th className="px-6 py-4">Entry Date</th>
-                                        <th className="px-6 py-4 text-right">Amount Added</th>
+                                        <th className="px-6 py-4 text-right">Amount</th>
                                         <th className="px-6 py-4">Remarks</th>
-                                        <th className="px-6 py-4">Recorded By</th>
-                                        <th className="px-6 py-4">Timestamp</th>
+                                        <th className="px-6 py-4">Entered By</th>
+                                        <th className="px-6 py-4">Created At</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-gray-100">
+                                <tbody className="divide-y divide-gray-150 bg-white">
                                     {entriesLoading ? (
                                         <tr>
                                             <td colSpan={5} className="text-center py-12">
@@ -952,7 +918,7 @@ export default function FundManagementPage() {
                                                     {formatDate(entry.entry_date)}
                                                 </td>
                                                 <td className="px-6 py-4 text-right font-extrabold text-emerald-600">
-                                                    + {formatCurrency(entry.amount)}
+                                                    {formatCurrency(entry.amount)}
                                                 </td>
                                                 <td className="px-6 py-4 text-gray-600 max-w-sm truncate" title={entry.remarks || ''}>
                                                     {entry.remarks || '-'}
@@ -961,7 +927,7 @@ export default function FundManagementPage() {
                                                     {entry.entered_by_name}
                                                 </td>
                                                 <td className="px-6 py-4 text-xs text-gray-400 whitespace-nowrap">
-                                                    {new Date(entry.created_at).toLocaleString()}
+                                                    {formatDate(entry.created_at)}, {new Date(entry.created_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: false })} IST
                                                 </td>
                                             </tr>
                                         ))
@@ -979,7 +945,7 @@ export default function FundManagementPage() {
                                     disabled={entriesPage <= 1}
                                     onClick={() => setEntriesPage(entriesPage - 1)}
                                 >
-                                    Previous
+                                    ‹
                                 </Button>
                                 <div className="text-sm text-gray-500 flex items-center px-2">
                                     Page {entriesPage} of {entriesTotalPages}
@@ -990,7 +956,7 @@ export default function FundManagementPage() {
                                     disabled={entriesPage >= entriesTotalPages}
                                     onClick={() => setEntriesPage(entriesPage + 1)}
                                 >
-                                    Next
+                                    ›
                                 </Button>
                             </div>
                         )}
@@ -1001,66 +967,68 @@ export default function FundManagementPage() {
                 {activeTab === 'allocations' && (
                     <div className="space-y-6">
                         {/* Filters */}
-                        <div className="flex flex-col sm:flex-row sm:items-center gap-3 bg-gray-50/50 p-4 rounded-xl border border-gray-100">
-                            <Select
-                                value={allocationsUserFilter}
-                                onChange={(e) => setAllocationsUserFilter(e.target.value)}
-                                className="h-9 border-gray-200 text-sm max-w-xs"
-                            >
-                                <option value="">All Staff Members</option>
-                                {staff.map(u => (
-                                    <option key={u.id} value={u.id}>
-                                        {u.full_name} ({u.role.replace('_', ' ')})
-                                    </option>
-                                ))}
-                            </Select>
+                        <div className="table-toolbar flex items-center justify-between gap-4 bg-gray-50/50 p-4 rounded-xl border border-gray-100">
+                            <div className="toolbar-left flex items-center gap-3 flex-wrap">
+                                <Select
+                                    value={allocationsUserFilter}
+                                    onChange={(e) => setAllocationsUserFilter(e.target.value)}
+                                    className="h-9 border-gray-300 text-xs max-w-xs"
+                                    placeholder="All Users"
+                                >
+                                    <option value="">All Users</option>
+                                    {staff.map(u => (
+                                        <option key={u.id} value={u.id}>
+                                            {u.full_name} ({u.role.replace('_', ' ')})
+                                        </option>
+                                    ))}
+                                </Select>
 
-                            <div className="flex items-center gap-1.5 bg-white px-2 py-1 rounded-lg border border-gray-200 h-9 max-w-xs flex-1">
-                                <Calendar size={14} className="text-gray-400 shrink-0" />
-                                <input 
-                                    type="date" 
-                                    className="text-xs focus:outline-none w-full bg-transparent text-gray-700" 
-                                    value={allocationsFrom}
-                                    onChange={(e) => setAllocationsFrom(e.target.value)}
-                                />
-                            </div>
-
-                            <div className="flex items-center gap-1.5 bg-white px-2 py-1 rounded-lg border border-gray-200 h-9 max-w-xs flex-1">
-                                <Calendar size={14} className="text-gray-400 shrink-0" />
-                                <input 
-                                    type="date" 
-                                    className="text-xs focus:outline-none w-full bg-transparent text-gray-700" 
-                                    value={allocationsTo}
-                                    onChange={(e) => setAllocationsTo(e.target.value)}
-                                />
+                                <div className="date-pair flex items-center gap-2">
+                                    <input 
+                                        type="date" 
+                                        className="h-9 px-3 border border-gray-300 rounded-lg text-xs bg-white" 
+                                        value={allocationsFrom}
+                                        onChange={(e) => setAllocationsFrom(e.target.value)}
+                                        style={{ width: '130px' }}
+                                    />
+                                    <span className="text-gray-400 text-xs">to</span>
+                                    <input 
+                                        type="date" 
+                                        className="h-9 px-3 border border-gray-300 rounded-lg text-xs bg-white" 
+                                        value={allocationsTo}
+                                        onChange={(e) => setAllocationsTo(e.target.value)}
+                                        style={{ width: '130px' }}
+                                    />
+                                </div>
                             </div>
                         </div>
 
                         {/* Allocations Table */}
-                        <div className="overflow-x-auto border border-gray-100 rounded-xl">
+                        <div className="overflow-x-auto border border-gray-150 rounded-xl shadow-sm">
                             <table className="w-full text-left text-sm text-gray-500">
-                                <thead className="text-xs text-gray-700 uppercase bg-gray-50 border-b border-gray-100">
+                                <thead className="text-xs text-gray-700 uppercase bg-gray-50 border-b border-gray-200">
                                     <tr>
-                                        <th className="px-6 py-4">Allocation Date</th>
+                                        <th className="px-6 py-4">Entry Date</th>
                                         <th className="px-6 py-4">Recipient</th>
-                                        <th className="px-6 py-4 text-right">Amount Disbursed</th>
-                                        <th className="px-6 py-4 text-right">Recipient Balance After</th>
-                                        <th className="px-6 py-4 text-right">Total Approved Expenses At Allocation</th>
-                                        <th className="px-6 py-4">Authorized By</th>
+                                        <th className="px-6 py-4">Role</th>
+                                        <th className="px-6 py-4 text-right">Amount</th>
+                                        <th className="px-6 py-4 text-right">Balance After</th>
+                                        <th className="px-6 py-4 text-right">Expenses at Time</th>
                                         <th className="px-6 py-4">Remarks</th>
+                                        <th className="px-6 py-4">Allocated By</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-gray-100">
+                                <tbody className="divide-y divide-gray-150 bg-white">
                                     {allocationsLoading ? (
                                         <tr>
-                                            <td colSpan={7} className="text-center py-12">
+                                            <td colSpan={8} className="text-center py-12">
                                                 <RefreshCw size={24} className="animate-spin text-pink-600 mx-auto" />
                                                 <p className="text-xs text-gray-400 mt-2">Loading allocations archive...</p>
                                             </td>
                                         </tr>
                                     ) : allocations.length === 0 ? (
                                         <tr>
-                                            <td colSpan={7} className="text-center py-12 text-gray-400 text-xs">
+                                            <td colSpan={8} className="text-center py-12 text-gray-400 text-xs">
                                                 No dynamic allocations recorded matching criteria.
                                             </td>
                                         </tr>
@@ -1070,16 +1038,18 @@ export default function FundManagementPage() {
                                                 <td className="px-6 py-4 font-bold text-gray-900 whitespace-nowrap">
                                                     {formatDate(row.entry_date)}
                                                 </td>
-                                                <td className="px-6 py-4">
-                                                    <div>
-                                                        <div className="font-semibold text-gray-900">{row.recipient_name}</div>
-                                                        <div className="text-[10px] text-gray-400 uppercase font-bold tracking-wider mt-0.5">
-                                                            {row.recipient_role.replace('_', ' ')}
-                                                        </div>
-                                                    </div>
+                                                <td className="px-6 py-4 font-semibold text-gray-900">
+                                                    {row.recipient_name}
                                                 </td>
-                                                <td className="px-6 py-4 text-right font-extrabold text-pink-600">
-                                                    + {formatCurrency(row.amount)}
+                                                <td className="px-6 py-4">
+                                                    {row.recipient_role === 'manager' ? (
+                                                        <span className="badge badge-blue bg-blue-50 border border-blue-200 text-blue-600 rounded-full px-2 py-0.5 text-xs font-semibold">Manager</span>
+                                                    ) : (
+                                                        <span className="badge badge-gray bg-gray-100 border border-gray-200 text-gray-600 rounded-full px-2 py-0.5 text-xs font-semibold">Field Exec</span>
+                                                    )}
+                                                </td>
+                                                <td className="px-6 py-4 text-right font-extrabold text-emerald-600">
+                                                    {formatCurrency(row.amount)}
                                                 </td>
                                                 <td className="px-6 py-4 text-right font-medium text-gray-900 whitespace-nowrap">
                                                     {formatCurrency(row.recipient_balance_after_alloc)}
@@ -1087,11 +1057,11 @@ export default function FundManagementPage() {
                                                 <td className="px-6 py-4 text-right text-gray-600 whitespace-nowrap">
                                                     {formatCurrency(row.recipient_total_expenses_at_alloc)}
                                                 </td>
-                                                <td className="px-6 py-4 text-gray-700">
-                                                    {row.allocator_name}
-                                                </td>
                                                 <td className="px-6 py-4 max-w-xs truncate text-gray-500" title={row.remarks || ''}>
                                                     {row.remarks || '-'}
+                                                </td>
+                                                <td className="px-6 py-4 text-gray-700">
+                                                    {row.allocator_name}
                                                 </td>
                                             </tr>
                                         ))
@@ -1109,7 +1079,7 @@ export default function FundManagementPage() {
                                     disabled={allocationsPage <= 1}
                                     onClick={() => setAllocationsPage(allocationsPage - 1)}
                                 >
-                                    Previous
+                                    ‹
                                 </Button>
                                 <div className="text-sm text-gray-500 flex items-center px-2">
                                     Page {allocationsPage} of {allocationsTotalPages}
@@ -1120,7 +1090,7 @@ export default function FundManagementPage() {
                                     disabled={allocationsPage >= allocationsTotalPages}
                                     onClick={() => setAllocationsPage(allocationsPage + 1)}
                                 >
-                                    Next
+                                    ›
                                 </Button>
                             </div>
                         )}
@@ -1132,45 +1102,46 @@ export default function FundManagementPage() {
             <Modal
                 isOpen={isReceiveModalOpen}
                 onClose={() => setIsReceiveModalOpen(false)}
-                title="Vault Capital Increase"
-                description="Inject additional capital deposits into the main Seragen liquidity account balance."
+                title="Receive Funds"
                 size="md"
             >
                 <form onSubmit={handleReceiveFunds} className="space-y-4">
                     <div>
-                        <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Deposit Amount (₹) *</label>
+                        <label className="form-label block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Amount (₹) *</label>
                         <Input 
                             type="number" 
-                            placeholder="Enter amount (e.g. 500000)" 
+                            placeholder="e.g. 50000" 
                             required
                             step="0.01"
                             min="0.01"
                             value={receiveAmount}
                             onChange={(e) => setReceiveAmount(e.target.value)}
-                            className="border-gray-200 h-10"
+                            className="form-input border-gray-300 h-10"
                         />
                     </div>
 
-                    <div>
-                        <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Deposit Entry Date *</label>
-                        <Input 
-                            type="date" 
-                            required
-                            value={receiveDate}
-                            onChange={(e) => setReceiveDate(e.target.value)}
-                            className="border-gray-200 h-10"
-                        />
-                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label className="form-label block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Entry Date *</label>
+                            <Input 
+                                type="date" 
+                                required
+                                value={receiveDate}
+                                onChange={(e) => setReceiveDate(e.target.value)}
+                                className="form-input border-gray-300 h-10"
+                            />
+                            <div className="form-hint text-[11px] text-gray-400 mt-1">Max 30 days in future</div>
+                        </div>
 
-                    <div>
-                        <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Deposit Comments / Reference</label>
-                        <Textarea 
-                            placeholder="Bank transaction reference, check ID, notes..." 
-                            value={receiveRemarks}
-                            onChange={(e) => setReceiveRemarks(e.target.value)}
-                            className="border-gray-200 min-h-[80px]"
-                            maxLength={500}
-                        />
+                        <div>
+                            <label className="form-label block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Remarks (optional)</label>
+                            <Input 
+                                placeholder="e.g. June operations fund" 
+                                value={receiveRemarks}
+                                onChange={(e) => setReceiveRemarks(e.target.value)}
+                                className="form-input border-gray-300 h-10"
+                            />
+                        </div>
                     </div>
 
                     {receiveError && (
@@ -1183,17 +1154,18 @@ export default function FundManagementPage() {
                     <ModalFooter>
                         <Button 
                             type="button" 
-                            variant="ghost" 
+                            variant="secondary" 
                             onClick={() => setIsReceiveModalOpen(false)}
+                            className="btn btn-secondary"
                         >
-                            Discard
+                            Cancel
                         </Button>
                         <Button 
                             type="submit" 
-                            className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium shadow-sm transition-colors duration-200"
+                            className="btn btn-primary bg-pink-600 hover:bg-pink-700 text-white font-medium"
                             isLoading={submittingReceive}
                         >
-                            Record Deposit
+                            Record Entry
                         </Button>
                     </ModalFooter>
                 </form>
@@ -1203,13 +1175,12 @@ export default function FundManagementPage() {
             <Modal
                 isOpen={isAllocateModalOpen}
                 onClose={() => setIsAllocateModalOpen(false)}
-                title="Disburse Staff Advances"
-                description="Allocate funds to field executives or managers. Enforces strict Seragen balance verification."
+                title="Allocate Funds"
                 size="xl"
             >
                 <form onSubmit={handleAllocateFunds} className="space-y-4">
                     {/* Display Point-In-Time available Seragen balance */}
-                    <div className="flex items-center justify-between p-3.5 rounded-xl bg-pink-50 border border-pink-100 text-pink-900 text-sm mb-4">
+                    <div className="balance-chip flex items-center justify-between p-3.5 rounded-xl bg-pink-50 border border-pink-200 text-pink-900 text-sm mb-4">
                         <div className="flex items-center gap-2">
                             <Boxes size={18} className="text-pink-600 shrink-0" />
                             <span className="font-semibold text-pink-800">Available Seragen Account Balance:</span>
@@ -1221,13 +1192,13 @@ export default function FundManagementPage() {
 
                     <div className="max-h-[300px] overflow-y-auto space-y-4 pr-1">
                         {allocationEntries.map((entry, index) => (
-                            <div key={index} className="p-4 rounded-xl border border-gray-100 bg-gray-50/40 relative space-y-3">
+                            <div key={index} className="p-4 rounded-xl border border-gray-200 bg-gray-50/50 relative space-y-3">
                                 
                                 {allocationEntries.length > 1 && (
                                     <button
                                         type="button"
                                         onClick={() => removeAllocationRow(index)}
-                                        className="absolute top-2 right-2 p-1 rounded-lg text-gray-400 hover:bg-gray-100 hover:text-rose-600 transition-colors"
+                                        className="absolute top-2 right-2 p-1 rounded-lg text-gray-400 hover:bg-gray-250 hover:text-rose-600 transition-colors"
                                         title="Remove Recipient"
                                     >
                                         <X size={16} />
@@ -1236,14 +1207,15 @@ export default function FundManagementPage() {
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                     <div>
-                                        <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">Select Staff Member *</label>
+                                        <label className="form-label block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Recipient *</label>
                                         <Select
                                             value={entry.user_id}
                                             onChange={(e) => updateAllocationRow(index, 'user_id', e.target.value)}
-                                            className="h-9 text-xs border-gray-200 bg-white"
+                                            className="form-input h-9 text-xs border-gray-300 bg-white"
                                             required
+                                            placeholder="- Select manager or field executive -"
                                         >
-                                            <option value="">-- Choose Recipient --</option>
+                                            <option value="">- Select manager or field executive -</option>
                                             {staff.map(u => (
                                                 <option key={u.id} value={u.id}>
                                                     {u.full_name} ({u.role.replace('_', ' ')})
@@ -1253,27 +1225,27 @@ export default function FundManagementPage() {
                                     </div>
 
                                     <div>
-                                        <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">Allocation Amount (₹) *</label>
+                                        <label className="form-label block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Amount (₹) *</label>
                                         <Input
                                             type="number"
-                                            placeholder="Enter disburse amount"
+                                            placeholder="e.g. 20000"
                                             step="0.01"
                                             min="0.01"
                                             required
                                             value={entry.amount}
                                             onChange={(e) => updateAllocationRow(index, 'amount', e.target.value)}
-                                            className="h-9 text-xs border-gray-200 bg-white"
+                                            className="form-input h-9 text-xs border-gray-300 bg-white"
                                         />
                                     </div>
                                 </div>
 
                                 <div>
-                                    <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">Disbursement Remarks / Comments</label>
+                                    <label className="form-label block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Remarks (optional)</label>
                                     <Input
-                                        placeholder="Reason for advance allocation..."
+                                        placeholder="e.g. June field operations"
                                         value={entry.remarks}
                                         onChange={(e) => updateAllocationRow(index, 'remarks', e.target.value)}
-                                        className="h-9 text-xs border-gray-200 bg-white"
+                                        className="form-input h-9 text-xs border-gray-300 bg-white"
                                     />
                                 </div>
                             </div>
@@ -1291,9 +1263,9 @@ export default function FundManagementPage() {
                         </button>
 
                         <div className="text-right">
-                            <span className="text-xs text-gray-500">Total Disbursements:</span>
+                            <span className="text-xs text-gray-500 font-semibold">Total Disbursements:</span>
                             <span className={`text-base font-extrabold ml-1.5 ${
-                                totalAllocationToDistribute > stats.available_seragen_account_balance ? 'text-rose-600 animate-pulse' : 'text-gray-900'
+                                totalAllocationToDistribute > stats.available_seragen_account_balance ? 'text-rose-600 animate-pulse' : 'text-pink-600'
                             }`}>
                                 {formatCurrency(totalAllocationToDistribute)}
                             </span>
@@ -1302,13 +1274,13 @@ export default function FundManagementPage() {
 
                     <div className="grid grid-cols-1 gap-3 pt-3">
                         <div>
-                            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Disbursement Effective Date *</label>
+                            <label className="form-label block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Entry Date *</label>
                             <Input 
                                 type="date" 
                                 required
                                 value={allocationDate}
                                 onChange={(e) => setAllocationDate(e.target.value)}
-                                className="border-gray-200 h-9"
+                                className="form-input border-gray-300 h-9"
                             />
                         </div>
                     </div>
@@ -1323,18 +1295,19 @@ export default function FundManagementPage() {
                     <ModalFooter>
                         <Button 
                             type="button" 
-                            variant="ghost" 
+                            variant="secondary" 
                             onClick={() => setIsAllocateModalOpen(false)}
+                            className="btn btn-secondary"
                         >
-                            Discard
+                            Cancel
                         </Button>
                         <Button 
                             type="submit" 
-                            className="bg-pink-600 hover:bg-pink-700 text-white font-medium shadow-sm transition-colors duration-200"
+                            className="btn btn-primary bg-pink-600 hover:bg-pink-700 text-white font-medium"
                             disabled={totalAllocationToDistribute > stats.available_seragen_account_balance}
                             isLoading={submittingAllocate}
                         >
-                            Authorize Allocations
+                            Allocate Funds
                         </Button>
                     </ModalFooter>
                 </form>

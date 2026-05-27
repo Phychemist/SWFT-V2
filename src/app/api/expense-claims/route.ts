@@ -182,7 +182,10 @@ export async function POST(request: NextRequest) {
         )
       }
 
-      const stageName = ticket.current_stage?.name.toLowerCase().trim()
+      const stage = Array.isArray(ticket.current_stage)
+        ? ticket.current_stage[0]
+        : (ticket.current_stage as any)
+      const stageName = stage?.name?.toLowerCase().trim() || ''
       const allowedCompletedStages = ['sample collected', 'sample received', 'sample sent to', 'analyzed', 'report received', 'final report generated', 'report submission', 'submitted and closed']
       if (!allowedCompletedStages.includes(stageName)) {
         return NextResponse.json<ApiResponse<null>>(

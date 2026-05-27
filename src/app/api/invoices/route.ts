@@ -109,7 +109,10 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const stageName = ticket.current_stage?.name.toLowerCase().trim()
+    const stage = Array.isArray(ticket.current_stage)
+      ? ticket.current_stage[0]
+      : (ticket.current_stage as any)
+    const stageName = stage?.name?.toLowerCase().trim() || ''
     if (stageName !== 'submitted and closed') {
       return NextResponse.json<ApiResponse<null>>(
         { success: false, error: 'Invoices can only be generated for successfully closed tasks (stage: "submitted and closed").' },
@@ -180,16 +183,24 @@ export async function POST(request: NextRequest) {
     const padNum = String(nextNumber).padStart(4, '0')
     const invoice_uid = `INV-${currentYear}-${padNum}`
 
+    const hosp = Array.isArray(ticket.hospital)
+      ? ticket.hospital[0]
+      : (ticket.hospital as any)
+
+    const service = Array.isArray(ticket.service_type)
+      ? ticket.service_type[0]
+      : (ticket.service_type as any)
+
     // 5. Generate Professional PDF invoice buffer on the server
     let pdfBuffer
     try {
       pdfBuffer = await generateInvoicePDFBuffer({
         invoiceUid: invoice_uid,
         dateStr: new Date().toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' }),
-        hospitalName: ticket.hospital?.name || 'Unknown Hospital',
-        hospitalAddress: ticket.hospital?.address || '',
-        hospitalCity: ticket.hospital?.city || '',
-        serviceCategory: ticket.service_type?.category || 'diagnostics',
+        hospitalName: hosp?.name || 'Unknown Hospital',
+        hospitalAddress: hosp?.address || '',
+        hospitalCity: hosp?.city || '',
+        serviceCategory: service?.category || 'diagnostics',
         ticketUid: ticket.uid,
         baseAmount: base_amount,
         gstAmount: gst_amount,

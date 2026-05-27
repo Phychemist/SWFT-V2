@@ -26,7 +26,10 @@ export async function autoCreateConsumptions(ticketId: string): Promise<boolean>
     }
 
     const feId = ticket.assigned_to
-    const kitText = ticket.service_type?.kit
+    const serviceType = Array.isArray(ticket.service_type)
+      ? ticket.service_type[0]
+      : (ticket.service_type as any)
+    const kitText = serviceType?.kit
 
     // If no FE is assigned or there's no kit required, do nothing
     if (!feId || !kitText || kitText.trim() === '') {

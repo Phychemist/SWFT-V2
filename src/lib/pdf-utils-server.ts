@@ -170,7 +170,7 @@ export async function generateInvoicePDFBuffer(data: InvoicePDFData): Promise<Bu
 
   // Invoice Table Headers
   const tableY = y
-  page.fillRect({
+  page.drawRectangle({
     x: 50,
     y: tableY - 5,
     width: width - 100,
@@ -200,7 +200,7 @@ export async function generateInvoicePDFBuffer(data: InvoicePDFData): Promise<Bu
   const boxWidth = 220
   const boxX = width - 50 - boxWidth
 
-  page.fillRect({
+  page.drawRectangle({
     x: boxX,
     y: y - boxHeight + 20,
     width: boxWidth,

@@ -98,19 +98,6 @@ export async function GET(request: NextRequest) {
   }
 }
 
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  // Wait, in Next.js 16 params is a Promise or can be retrieved, but since we are overriding a specific consumption ID:
-  // Wait, let's look at the endpoint url format. Is it /api/inventory/consumptions/[id] or just PATCH on /api/inventory/consumptions with a query param?
-  // Let's check `task.md` or our implementation plan:
-  // "inventory/consumptions/route.ts: Enforces the 24-hour FE override window and verifies stock safety before completing override requests."
-  // Wait, if it is in `route.ts`, it can support PATCH /api/inventory/consumptions with a body containing `{ id, quantity_used, override_reason }`! That is much cleaner and avoids having to create an extra folder `[id]`.
-  // Let's implement it in `route.ts` as a PATCH method!
-  return PATCH_handler(request)
-}
-
 export async function PATCH_handler(request: NextRequest) {
   try {
     const session = await getSession()
@@ -141,7 +128,7 @@ export async function PATCH_handler(request: NextRequest) {
     const parsed = overrideConsumptionSchema.safeParse({ quantity_used, override_reason })
     if (!parsed.success) {
       return NextResponse.json<ApiResponse<null>>(
-        { success: false, error: parsed.error.errors[0].message },
+        { success: false, error: parsed.error.issues[0].message },
         { status: 400 }
       )
     }

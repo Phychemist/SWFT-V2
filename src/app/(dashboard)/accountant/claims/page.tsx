@@ -201,14 +201,14 @@ export default function AccountantClaimsPage() {
             <div className="bg-white border-b border-[var(--border-light)] sticky top-0 z-10 px-6 py-4">
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                     <div>
-                        <h1 className="text-2xl font-extrabold text-gray-900 leading-tight">Expense Claims Management</h1>
-                        <p className="text-xs text-[var(--text-muted)] font-medium">Configure limits and review employee expense reports</p>
+                        <h1 className="text-2xl font-extrabold text-gray-900 leading-tight">Claims Management</h1>
+                        <p className="text-xs text-[var(--text-muted)] font-medium">Review and approve field executive expense claims</p>
                     </div>
                     <button
                         onClick={() => setShowRateModal(true)}
-                        className="bg-pink-600 hover:bg-pink-700 text-white text-xs font-bold py-2.5 px-4 rounded-xl shadow-sm flex items-center justify-center gap-1.5 transition-all active:scale-95"
+                        className="bg-white hover:bg-gray-50 border border-gray-300 text-gray-700 text-xs font-bold py-2 px-4 rounded-xl shadow-sm flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer"
                     >
-                        <Sliders size={14} /> Configure Rates & Caps
+                        <Sliders size={13} /> Rate Config
                     </button>
                 </div>
             </div>
@@ -223,96 +223,77 @@ export default function AccountantClaimsPage() {
                 )}
 
                 {/* Stats Grid */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div className="bg-white rounded-2xl border border-[var(--border-light)] p-5 shadow-sm relative overflow-hidden">
-                        <div className="absolute top-0 left-0 w-full h-[4px] bg-pink-500" />
-                        <div className="flex items-center justify-between text-gray-400 mb-2">
-                            <span className="text-xs font-bold uppercase tracking-wider">Pending Claims Value</span>
-                            <div className="p-1.5 bg-pink-50 text-pink-600 rounded-lg"><Clock size={16} /></div>
+                <div className="stats-grid-3 grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="stat-card bg-white border border-[var(--border-light)] rounded-xl p-5 shadow-sm flex items-center gap-3.5">
+                        <div className="stat-icon w-11 h-11 rounded-full bg-amber-50 text-amber-500 flex items-center justify-center shrink-0 text-xl">
+                            <Clock size={20} />
                         </div>
-                        <div className="text-2xl font-extrabold text-pink-600">
-                            {loading ? <Loader2 className="animate-spin text-pink-500" size={24} /> : `₹${stats.pending_claims_amount?.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`}
+                        <div className="stat-body">
+                            <div className="stat-label text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Pending Claims</div>
+                            <div className="stat-value text-2xl font-bold text-gray-900 mt-1">
+                                {loading ? '...' : stats.pending_claims_count}
+                            </div>
                         </div>
-                        <p className="text-[10px] text-gray-400 mt-1">{stats.pending_claims_count} claim requests awaiting approval</p>
                     </div>
 
-                    <div className="bg-white rounded-2xl border border-[var(--border-light)] p-5 shadow-sm relative overflow-hidden">
-                        <div className="absolute top-0 left-0 w-full h-[4px] bg-green-500" />
-                        <div className="flex items-center justify-between text-gray-400 mb-2">
-                            <span className="text-xs font-bold uppercase tracking-wider">Approved Claims Value</span>
-                            <div className="p-1.5 bg-green-50 text-green-600 rounded-lg"><Receipt size={16} /></div>
+                    <div className="stat-card bg-white border border-[var(--border-light)] rounded-xl p-5 shadow-sm flex items-center gap-3.5">
+                        <div className="stat-icon w-11 h-11 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 text-xl">
+                            <CheckCircle2 size={20} />
                         </div>
-                        <div className="text-2xl font-extrabold text-gray-800">
-                            {loading ? <Loader2 className="animate-spin text-green-500" size={24} /> : `₹${stats.approved_claims_amount?.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`}
+                        <div className="stat-body">
+                            <div className="stat-label text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Total Approved (filtered)</div>
+                            <div className="stat-value text-2xl font-bold text-gray-900 mt-1">
+                                {loading ? '...' : `₹${(stats.approved_claims_amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`}
+                            </div>
                         </div>
-                        <p className="text-[10px] text-gray-400 mt-1">{stats.approved_claims_count} claims successfully disbursed</p>
                     </div>
 
-                    {/* Rates Info Panel */}
-                    <div className="bg-white rounded-2xl border border-[var(--border-light)] p-5 shadow-sm md:col-span-2 relative overflow-hidden">
-                        <div className="absolute top-0 left-0 w-full h-[4px] bg-indigo-500" />
-                        <div className="flex items-center justify-between text-gray-400 mb-3">
-                            <span className="text-xs font-bold uppercase tracking-wider">Current Allowance Configuration</span>
-                            <div className="p-1.5 bg-indigo-50 text-indigo-600 rounded-lg"><TrendingUp size={16} /></div>
+                    <div className="stat-card bg-white border border-[var(--border-light)] rounded-xl p-5 shadow-sm flex items-center gap-3.5">
+                        <div className="stat-icon w-11 h-11 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 text-xl">
+                            <Receipt size={20} />
                         </div>
-                        <div className="grid grid-cols-4 gap-2 text-center text-xs">
-                            <div className="bg-gray-50 p-2 rounded-xl">
-                                <div className="text-[9px] text-gray-400 font-bold uppercase">Petrol / km</div>
-                                <div className="font-extrabold text-gray-700 mt-0.5">₹{ratesConfig.petrol_rate_per_km}</div>
-                            </div>
-                            <div className="bg-gray-50 p-2 rounded-xl">
-                                <div className="text-[9px] text-gray-400 font-bold uppercase">Breakfast</div>
-                                <div className="font-extrabold text-gray-700 mt-0.5">₹{ratesConfig.breakfast_max}</div>
-                            </div>
-                            <div className="bg-gray-50 p-2 rounded-xl">
-                                <div className="text-[9px] text-gray-400 font-bold uppercase">Lunch</div>
-                                <div className="font-extrabold text-gray-700 mt-0.5">₹{ratesConfig.lunch_max}</div>
-                            </div>
-                            <div className="bg-gray-50 p-2 rounded-xl">
-                                <div className="text-[9px] text-gray-400 font-bold uppercase">Dinner</div>
-                                <div className="font-extrabold text-gray-700 mt-0.5">₹{ratesConfig.dinner_max}</div>
+                        <div className="stat-body">
+                            <div className="stat-label text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Total Claims</div>
+                            <div className="stat-value text-2xl font-bold text-gray-900 mt-1">
+                                {loading ? '...' : (claims.length || 0)}
                             </div>
                         </div>
                     </div>
                 </div>
 
-                {/* Filter and search bar */}
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-4 rounded-2xl border border-[var(--border-light)] shadow-sm">
-                    <div className="relative flex-1">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-                        <input
-                            type="text"
-                            placeholder="Search employee, Ticket UID, description..."
-                            className="w-full pl-9 pr-4 py-2.5 bg-gray-50 border border-[var(--border-light)] rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-pink-200 focus:border-transparent transition-all"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                        />
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Status:</label>
-                        <div className="relative">
-                            <select
-                                value={statusFilter}
-                                onChange={(e) => setStatusFilter(e.target.value)}
-                                className="bg-white border border-[var(--border-light)] px-3 py-2.5 rounded-xl text-xs font-medium cursor-pointer pr-8 appearance-none focus:outline-none"
+                {/* Filter pills */}
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div className="filter-pills flex gap-2">
+                        {['all', 'pending', 'approved', 'rejected'].map((status) => (
+                            <button
+                                key={status}
+                                onClick={() => setStatusFilter(status)}
+                                className={`fpill px-4.5 py-1.5 rounded-full text-xs font-semibold border transition-all cursor-pointer ${
+                                    statusFilter === status
+                                        ? 'bg-pink-600 border-pink-600 text-white font-bold'
+                                        : 'bg-white border-gray-300 text-gray-600 hover:bg-gray-50'
+                                }`}
                             >
-                                <option value="all">All Claims</option>
-                                <option value="pending">Pending</option>
-                                <option value="approved">Approved</option>
-                                <option value="rejected">Rejected</option>
-                            </select>
-                            <ChevronDown size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-                        </div>
+                                {status.charAt(0).toUpperCase() + status.slice(1)}
+                            </button>
+                        ))}
                     </div>
                 </div>
 
                 {/* Claims list */}
-                <div className="bg-white rounded-2xl border border-[var(--border-light)] shadow-sm overflow-hidden">
-                    <div className="p-4 border-b border-[var(--border-light)] bg-gray-50 flex items-center justify-between">
-                        <h2 className="font-bold text-gray-800 text-sm flex items-center gap-2">
-                            <Activity size={16} className="text-pink-600" />
-                            EMPLOYEE CLAIM LISTING
-                        </h2>
+                <div className="table-wrap bg-white border border-[var(--border-light)] rounded-xl shadow-sm overflow-hidden">
+                    <div className="table-toolbar flex items-center justify-between gap-4 p-4 border-b border-[var(--border-light)]">
+                        <div className="toolbar-left flex items-center gap-3 flex-1">
+                            <div className="search-box flex items-center gap-2 bg-white px-3 py-1.5 border border-gray-300 rounded-lg w-[240px]">
+                                <Search size={14} className="text-gray-400 shrink-0" />
+                                <input
+                                    placeholder="Search claimant or ticket..."
+                                    className="text-sm focus:outline-none w-full bg-transparent text-gray-700"
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                />
+                            </div>
+                        </div>
                     </div>
 
                     <div className="overflow-x-auto">
@@ -327,56 +308,68 @@ export default function AccountantClaimsPage() {
                         ) : (
                             <table className="w-full text-left border-collapse text-xs">
                                 <thead>
-                                    <tr className="bg-gray-50 border-b border-gray-100 font-bold text-gray-500">
-                                        <th className="p-4">Submission Date</th>
-                                        <th className="p-4">Employee Details</th>
-                                        <th className="p-4">Associated Task</th>
-                                        <th className="p-4">Claim Context / Reason</th>
-                                        <th className="p-4 text-right">Claim Amount</th>
+                                    <tr className="bg-gray-50 border-b border-gray-200 font-bold text-gray-500">
+                                        <th className="p-4">Date</th>
+                                        <th className="p-4">Claimant</th>
+                                        <th className="p-4">Role</th>
+                                        <th className="p-4">Ticket</th>
+                                        <th className="p-4 text-right">Total Amount</th>
                                         <th className="p-4">Status</th>
-                                        <th className="p-4 text-center">Action</th>
+                                        <th className="p-4 text-center">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {filteredClaims.map((claim) => (
-                                        <tr key={claim.id} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
-                                            <td className="p-4 font-medium text-gray-500">{formatDate(claim.created_at)}</td>
+                                        <tr key={claim.id} className="border-b border-gray-100 hover:bg-gray-50/50 transition-colors">
+                                            <td className="p-4 font-semibold text-gray-700">
+                                                {formatDate(claim.created_at)}
+                                            </td>
+                                            <td className="p-4 font-bold text-gray-800">
+                                                {claim.claimant?.full_name}
+                                            </td>
                                             <td className="p-4">
-                                                <div>
-                                                    <span className="font-bold text-gray-700">{claim.claimant?.full_name}</span>
-                                                    <p className="text-[9px] text-pink-600 font-semibold mt-0.5 uppercase tracking-wide">
-                                                        {claim.claimant?.role.replace('_', ' ')}
-                                                    </p>
-                                                </div>
+                                                <span className="badge badge-gray bg-gray-100 border border-gray-200 text-gray-600 rounded-full px-2 py-0.5 font-bold uppercase text-[9px]">
+                                                    {claim.claimant?.role === 'field_executive' ? 'Field Exec' : 'Manager'}
+                                                </span>
                                             </td>
-                                            <td className="p-4 font-bold text-gray-700">
-                                                {claim.ticket ? claim.ticket.uid : <span className="italic text-gray-400 font-normal">None (Freestanding)</span>}
+                                            <td className="p-4 font-bold text-pink-600">
+                                                {claim.ticket ? claim.ticket.uid : <span className="text-gray-400 font-normal">—</span>}
                                             </td>
-                                            <td className="p-4 max-w-xs truncate font-medium text-gray-600">
-                                                {claim.outstation_travel ? (
-                                                    <span className="bg-indigo-50 border border-indigo-100 text-indigo-700 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider text-[9px] mr-1.5">
-                                                        Outstation
-                                                    </span>
-                                                ) : null}
-                                                {claim.reason || claim.ticket?.patient_name || 'General business claim'}
-                                            </td>
-                                            <td className="p-4 text-right font-bold text-gray-800 text-sm">₹{Number(claim.total_amount).toFixed(2)}</td>
+                                            <td className="p-4 text-right font-extrabold text-gray-800 text-sm">₹{Number(claim.total_amount).toFixed(2)}</td>
                                             <td className="p-4">
                                                 <span className={`px-2.5 py-1 rounded-full uppercase font-bold text-[9px] border ${getStatusStyle(claim.status)}`}>
                                                     {claim.status}
                                                 </span>
                                             </td>
                                             <td className="p-4 text-center">
-                                                <button
-                                                    onClick={() => {
-                                                        setSelectedClaim(claim)
-                                                        setReviewNotes(claim.review_notes || '')
-                                                        setRejecting(false)
-                                                    }}
-                                                    className="bg-pink-50 border border-pink-100 text-pink-700 hover:bg-pink-100/50 text-[10px] font-bold py-1.5 px-3 rounded-lg transition-colors"
-                                                >
-                                                    {claim.status === 'pending' ? 'Review & Act' : 'View Details'}
-                                                </button>
+                                                {claim.status === 'pending' ? (
+                                                    <div className="flex items-center justify-center gap-1.5">
+                                                        <button
+                                                            onClick={() => {
+                                                                setSelectedClaim(claim)
+                                                                setReviewNotes(claim.review_notes || '')
+                                                                setRejecting(false)
+                                                            }}
+                                                            className="bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-bold py-1 px-3 rounded transition-colors cursor-pointer"
+                                                        >
+                                                            Approve
+                                                        </button>
+                                                        <button
+                                                            onClick={() => {
+                                                                setSelectedClaim(claim)
+                                                                setReviewNotes(claim.review_notes || '')
+                                                                setRejecting(true)
+                                                            }}
+                                                            className="bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 text-[10px] font-bold py-1 px-3 rounded transition-colors cursor-pointer"
+                                                        >
+                                                            Review
+                                                        </button>
+                                                    </div>
+                                                ) : (
+                                                    <span className="text-gray-400 italic text-[11px]">
+                                                        {claim.status === 'approved' ? 'Reviewed' : 'Rejected'}
+                                                    </span>
+                                                )}
                                             </td>
                                         </tr>
                                     ))}

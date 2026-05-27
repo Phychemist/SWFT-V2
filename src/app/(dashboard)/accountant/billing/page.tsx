@@ -16,8 +16,11 @@ import {
     ArrowRight,
     TrendingUp,
     FileSpreadsheet,
-    Activity
+    Activity,
+    ChevronDown,
+    Save
 } from 'lucide-react'
+import { formatDate } from '@/lib/utils'
 
 export default function AccountantBillingPage() {
     const [invoices, setInvoices] = useState<any[]>([])
@@ -25,6 +28,9 @@ export default function AccountantBillingPage() {
     const [loading, setLoading] = useState(true)
     const [loadingAction, setLoadingAction] = useState(false)
     const [searchQuery, setSearchQuery] = useState('')
+    const [billingFrom, setBillingFrom] = useState('')
+    const [billingTo, setBillingTo] = useState('')
+    const [hospitalFilter, setHospitalFilter] = useState('')
     const [error, setError] = useState<string | null>(null)
     const [success, setSuccess] = useState<string | null>(null)
 
@@ -144,21 +150,32 @@ export default function AccountantBillingPage() {
         }
     }
 
-    const filteredInvoices = invoices.filter(inv => 
-        inv.uid.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        inv.ticket_uid.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        inv.patient_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        inv.hospital_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        inv.service_name.toLowerCase().includes(searchQuery.toLowerCase())
-    )
+    const filteredInvoices = invoices.filter(inv => {
+        const matchesSearch = 
+            inv.uid.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            inv.ticket_uid.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            inv.patient_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            inv.hospital_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            inv.service_name.toLowerCase().includes(searchQuery.toLowerCase())
+            
+        const matchesHospital = hospitalFilter === '' || inv.hospital_name === hospitalFilter
+        
+        let matchesDates = true
+        if (billingFrom) {
+            matchesDates = matchesDates && new Date(inv.generated_at) >= new Date(billingFrom)
+        }
+        if (billingTo) {
+            matchesDates = matchesDates && new Date(inv.generated_at) <= new Date(billingTo)
+        }
+        
+        return matchesSearch && matchesHospital && matchesDates
+    })
 
     const handleDownloadPDF = (invoiceId: string, invoiceUid: string) => {
         window.open(`/api/invoices/${invoiceId}/pdf`, '_blank')
     }
 
-    // Calculations
-    const totalBilledVal = invoices.reduce((acc, inv) => acc + Number(inv.total_amount), 0)
-    const pendingTicketsCount = unbilledTickets.length
+    const uniqueHospitals = Array.from(new Set(invoices.map(inv => inv.hospital_name)))
 
     return (
         <div className="flex flex-col min-h-screen bg-[var(--gray-50)] pb-12 rose-theme">
@@ -167,7 +184,7 @@ export default function AccountantBillingPage() {
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                     <div>
                         <h1 className="text-2xl font-extrabold text-gray-900 leading-tight">Billing & Invoices</h1>
-                        <p className="text-xs text-[var(--text-muted)] font-medium">Generate hospital invoices and oversee accounts receivable</p>
+                        <p className="text-xs text-[var(--text-muted)] font-medium">Generate and manage hospital invoices for completed tickets</p>
                     </div>
                     <button
                         onClick={() => {
@@ -176,7 +193,7 @@ export default function AccountantBillingPage() {
                             setError(null)
                             setShowModal(true)
                         }}
-                        className="bg-pink-600 hover:bg-pink-700 text-white text-xs font-bold py-2.5 px-4 rounded-xl shadow-sm flex items-center justify-center gap-1.5 transition-all active:scale-95"
+                        className="bg-pink-600 hover:bg-pink-700 text-white text-xs font-bold py-2.5 px-4 rounded-xl shadow-sm flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer"
                     >
                         <Plus size={14} /> Generate Invoice
                     </button>
@@ -192,75 +209,49 @@ export default function AccountantBillingPage() {
                     </div>
                 )}
 
-                {/* Stats Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {/* Card 1: Total Billed */}
-                    <div className="bg-white rounded-2xl border border-[var(--border-light)] p-5 shadow-sm relative overflow-hidden">
-                        <div className="absolute top-0 left-0 w-full h-[4px] bg-pink-500" />
-                        <div className="flex items-center justify-between text-gray-400 mb-2">
-                            <span className="text-xs font-bold uppercase tracking-wider">Total Amount Billed</span>
-                            <div className="p-1.5 bg-pink-50 text-pink-600 rounded-lg"><Receipt size={16} /></div>
-                        </div>
-                        <div className="text-2xl font-extrabold text-pink-600">
-                            {loading ? <Loader2 className="animate-spin text-pink-500" size={24} /> : `₹${totalBilledVal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`}
-                        </div>
-                        <p className="text-[10px] text-gray-400 mt-1">{invoices.length} invoices generated in total</p>
-                    </div>
-
-                    {/* Card 2: Unbilled tickets */}
-                    <div className="bg-white rounded-2xl border border-[var(--border-light)] p-5 shadow-sm relative overflow-hidden">
-                        <div className="absolute top-0 left-0 w-full h-[4px] bg-indigo-500" />
-                        <div className="flex items-center justify-between text-gray-400 mb-2">
-                            <span className="text-xs font-bold uppercase tracking-wider">Unbilled Completed Tasks</span>
-                            <div className="p-1.5 bg-indigo-50 text-indigo-600 rounded-lg"><FileSpreadsheet size={16} /></div>
-                        </div>
-                        <div className="text-2xl font-extrabold text-gray-800">
-                            {loading ? <Loader2 className="animate-spin text-indigo-500" size={24} /> : pendingTicketsCount}
-                        </div>
-                        <p className="text-[10px] text-gray-400 mt-1">Successfully closed tickets awaiting invoicing</p>
-                    </div>
-
-                    {/* Card 3: Tax Rates Panel */}
-                    <div className="bg-white rounded-2xl border border-[var(--border-light)] p-5 shadow-sm relative overflow-hidden">
-                        <div className="absolute top-0 left-0 w-full h-[4px] bg-green-500" />
-                        <div className="flex items-center justify-between text-gray-400 mb-2">
-                            <span className="text-xs font-bold uppercase tracking-wider">Standard Corporate Tax Parameters</span>
-                            <div className="p-1.5 bg-green-50 text-green-600 rounded-lg"><TrendingUp size={16} /></div>
-                        </div>
-                        <div className="flex justify-between items-center text-xs mt-3">
-                            <div className="bg-gray-50 px-4 py-2.5 rounded-xl text-center flex-1 mr-2">
-                                <span className="text-[9px] text-gray-400 font-bold block uppercase">GST Rate</span>
-                                <span className="font-extrabold text-gray-700 mt-0.5">18.00%</span>
+                {/* Table Wrap */}
+                <div className="table-wrap bg-white border border-[var(--border-light)] rounded-xl shadow-sm overflow-hidden">
+                    <div className="table-toolbar flex items-center justify-between gap-4 p-4 border-b border-[var(--border-light)] flex-wrap">
+                        <div className="toolbar-left flex items-center gap-3 flex-wrap flex-1">
+                            <div className="search-box flex items-center gap-2 bg-white px-3 py-1.5 border border-gray-300 rounded-lg w-[240px]">
+                                <Search size={14} className="text-gray-400 shrink-0" />
+                                <input
+                                    placeholder="Invoice UID or ticket UID..."
+                                    className="text-sm focus:outline-none w-full bg-transparent text-gray-700"
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                />
                             </div>
-                            <div className="bg-gray-50 px-4 py-2.5 rounded-xl text-center flex-1 ml-2">
-                                <span className="text-[9px] text-gray-400 font-bold block uppercase">TDS Rate</span>
-                                <span className="font-extrabold text-gray-700 mt-0.5">10.00%</span>
+
+                            <div className="date-pair flex items-center gap-2">
+                                <input 
+                                    type="date" 
+                                    className="h-9 px-3 border border-gray-300 rounded-lg text-xs bg-white text-gray-700 focus:outline-none focus:border-pink-400" 
+                                    value={billingFrom}
+                                    onChange={(e) => setBillingFrom(e.target.value)}
+                                    style={{ width: '130px' }}
+                                />
+                                <span className="text-gray-400 text-xs">to</span>
+                                <input 
+                                    type="date" 
+                                    className="h-9 px-3 border border-gray-300 rounded-lg text-xs bg-white text-gray-700 focus:outline-none focus:border-pink-400" 
+                                    value={billingTo}
+                                    onChange={(e) => setBillingTo(e.target.value)}
+                                    style={{ width: '130px' }}
+                                />
                             </div>
+
+                            <select
+                                value={hospitalFilter}
+                                onChange={(e) => setHospitalFilter(e.target.value)}
+                                className="h-9 px-3 border border-gray-300 rounded-lg text-xs bg-white text-gray-700 focus:outline-none w-[180px]"
+                            >
+                                <option value="">All Hospitals</option>
+                                {uniqueHospitals.map(h => (
+                                    <option key={h} value={h}>{h}</option>
+                                ))}
+                            </select>
                         </div>
-                    </div>
-                </div>
-
-                {/* Filter and search bar */}
-                <div className="bg-white p-4 rounded-2xl border border-[var(--border-light)] shadow-sm">
-                    <div className="relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-                        <input
-                            type="text"
-                            placeholder="Search invoices by UID, Ticket ID, patient name, hospital, service..."
-                            className="w-full pl-9 pr-4 py-2.5 bg-gray-50 border border-[var(--border-light)] rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-pink-200 focus:border-transparent transition-all"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                        />
-                    </div>
-                </div>
-
-                {/* Invoices List */}
-                <div className="bg-white rounded-2xl border border-[var(--border-light)] shadow-sm overflow-hidden">
-                    <div className="p-4 border-b border-[var(--border-light)] bg-gray-50 flex items-center justify-between">
-                        <h2 className="font-bold text-gray-800 text-sm flex items-center gap-2">
-                            <Activity size={16} className="text-pink-600" />
-                            GENERATED SALES INVOICES
-                        </h2>
                     </div>
 
                     <div className="overflow-x-auto">
@@ -276,49 +267,60 @@ export default function AccountantBillingPage() {
                             <table className="w-full text-left border-collapse text-xs">
                                 <thead>
                                     <tr className="bg-gray-50 border-b border-gray-100 font-bold text-gray-500">
-                                        <th className="p-4">Invoice Date</th>
                                         <th className="p-4">Invoice UID</th>
-                                        <th className="p-4">Ticket UID</th>
-                                        <th className="p-4">Patient / Hospital</th>
-                                        <th className="p-4">Workflow Details</th>
-                                        <th className="p-4 text-right">Base (₹)</th>
-                                        <th className="p-4 text-right">GST (₹)</th>
-                                        <th className="p-4 text-right">TDS (₹)</th>
-                                        <th className="p-4 text-right font-bold text-pink-600">Total Bill (₹)</th>
-                                        <th className="p-4 text-center">Action</th>
+                                        <th className="p-4">Ticket</th>
+                                        <th className="p-4">Hospital</th>
+                                        <th className="p-4">Service</th>
+                                        <th className="p-4 text-right">Base Amount</th>
+                                        <th className="p-4 text-right">GST</th>
+                                        <th className="p-4 text-right">TDS</th>
+                                        <th className="p-4 text-right font-bold">Total</th>
+                                        <th className="p-4">Date</th>
+                                        <th className="p-4 text-center">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {filteredInvoices.map((inv) => (
                                         <tr key={inv.id} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
-                                            <td className="p-4 font-medium text-gray-500">{formatDate(inv.generated_at)}</td>
-                                            <td className="p-4 font-bold text-gray-800">{inv.uid}</td>
-                                            <td className="p-4 font-bold text-gray-700">{inv.ticket_uid}</td>
-                                            <td className="p-4 font-medium">
-                                                <div>
-                                                    <span className="font-bold text-gray-700">{inv.patient_name}</span>
-                                                    <p className="text-[10px] text-gray-400 mt-0.5">{inv.hospital_name}</p>
-                                                </div>
+                                            <td className="p-4 font-bold" style={{ fontFamily: 'monospace', fontSize: '12px', color: 'var(--primary-700)' }}>
+                                                {inv.uid}
+                                            </td>
+                                            <td className="p-4 font-bold text-pink-600">
+                                                {inv.ticket_uid}
+                                            </td>
+                                            <td className="p-4 font-semibold text-gray-700">
+                                                {inv.hospital_name}
+                                                <div className="text-[10px] text-gray-400 font-normal mt-0.5">Patient: {inv.patient_name}</div>
                                             </td>
                                             <td className="p-4">
-                                                <div>
-                                                    <span className="font-semibold text-gray-600">{inv.service_name}</span>
-                                                    <span className="bg-pink-50 border border-pink-100 text-pink-700 px-1.5 py-0.5 rounded font-bold uppercase text-[9px] block w-max mt-0.5 tracking-wider">
-                                                        {inv.service_category}
-                                                    </span>
-                                                </div>
+                                                <span className="badge badge-gray bg-gray-100 border border-gray-200 text-gray-600 rounded-full px-2 py-0.5 font-bold uppercase text-[9px]">
+                                                    {inv.service_category}
+                                                </span>
                                             </td>
-                                            <td className="p-4 text-right font-semibold text-gray-600">₹{inv.base_amount.toFixed(2)}</td>
-                                            <td className="p-4 text-right text-gray-500">₹{inv.gst_amount.toFixed(2)}</td>
-                                            <td className="p-4 text-right text-red-500">-₹{inv.tds_amount.toFixed(2)}</td>
-                                            <td className="p-4 text-right font-extrabold text-pink-600 text-sm">₹{inv.total_amount.toFixed(2)}</td>
+                                            <td className="p-4 text-right font-semibold text-gray-600">₹{inv.base_amount.toLocaleString('en-IN')}</td>
+                                            <td className="p-4 text-right text-gray-500">
+                                                {inv.gst_amount > 0 ? `₹${inv.gst_amount.toLocaleString('en-IN')}` : '—'}
+                                            </td>
+                                            <td className="p-4 text-right text-red-500">
+                                                {inv.tds_amount > 0 ? `-₹${inv.tds_amount.toLocaleString('en-IN')}` : '—'}
+                                            </td>
+                                            <td className="p-4 text-right font-extrabold text-gray-800 text-sm">₹{inv.total_amount.toLocaleString('en-IN')}</td>
+                                            <td className="p-4 text-gray-400 font-semibold">{formatDate(inv.generated_at)}</td>
                                             <td className="p-4 text-center">
-                                                <button
-                                                    onClick={() => handleDownloadPDF(inv.id, inv.uid)}
-                                                    className="bg-pink-50 hover:bg-pink-100 border border-pink-100 text-pink-700 text-[10px] font-bold py-1.5 px-3 rounded-lg flex items-center justify-center gap-1 mx-auto transition-colors"
-                                                >
-                                                    <Download size={12} /> PDF
-                                                </button>
+                                                <div className="flex items-center justify-center gap-1.5">
+                                                    <button
+                                                        onClick={() => handleDownloadPDF(inv.id, inv.uid)}
+                                                        className="bg-white hover:bg-gray-50 border border-gray-300 text-gray-700 text-[11px] font-bold py-1 px-3 rounded transition-colors cursor-pointer"
+                                                    >
+                                                        View PDF
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleDownloadPDF(inv.id, inv.uid)}
+                                                        className="bg-gray-100 hover:bg-gray-200 text-gray-700 text-[11px] font-bold py-1 px-2.5 rounded transition-colors cursor-pointer"
+                                                    >
+                                                        ↓
+                                                    </button>
+                                                </div>
                                             </td>
                                         </tr>
                                     ))}
