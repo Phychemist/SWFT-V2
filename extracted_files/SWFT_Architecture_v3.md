@@ -186,16 +186,20 @@ export interface HospitalServiceCharge {
 // ── Slice D ──────────────────────────────────────────────────
 export interface Invoice {
   id: string
-  uid: string                        // e.g. "INV-20260516-0001"
-  ticket_id: string
-  hospital_service_charge_id: string
+  uid: string                        // e.g. "INV-2026-0001"
+  hospital_id: string
+  start_date: string                 // YYYY-MM-DD
+  end_date: string                   // YYYY-MM-DD
+  hospital_service_charge_id: string | null // For backward compatibility
   base_amount: number
   gst_amount: number
   tds_amount: number
   total_amount: number
-  pdf_url: string
-  generated_by: string
+  pdf_url: string                    // Point-in-time Summary Invoice PDF
+  annexure_url: string               // Point-in-time Detailed Patient Annexure PDF
+  generated_by: string | null
   generated_at: string
+  created_at: string
 }
 
 // ── Slice E ──────────────────────────────────────────────────
@@ -1829,40 +1833,43 @@ On submit: `POST /api/hospital-charges` once for every row where NEW (₹) has b
 
 | # | Rule |
 |---|------|
-| 1 | Ticket must have `status = 'completed'` before invoice can be generated. |
-| 2 | One invoice per ticket (UNIQUE constraint on `ticket_id`). |
-| 3 | No active charge for ticket's hospital + service_type → 400, cannot generate. |
+| 1 | Tickets must be successfully closed (stage: "submitted and closed", status: "completed") before being invoiced. |
+| 2 | Invoices are generated at the **Hospital** level over a specified **Date Range** (Start Date & End Date) and contain multiple tickets (1:Many relationship). |
+| 3 | Active charge rate must exist for each ticket's hospital + service_type active on the ticket completion date, otherwise generation is blocked. |
 | 4 | Invoice is immutable once generated. No regeneration. |
-| 5 | `total_amount = base_amount + gst_amount - tds_amount` |
-| 6 | GST = `base_amount × 0.18` if `gst_applicable = true`, else 0 |
-| 7 | TDS = `base_amount × 0.10` if `tds_applicable = true`, else 0 |
-| 8 | Invoice UID format: `INV-YYYYMMDD-####` — sequence resets daily (IST), padded to 4 digits. |
-| 9 | PDF stored in Supabase Storage bucket `'invoices'`, path `{invoice_id}/invoice.pdf`. |
+| 5 | `total_amount = base_amount + gst_amount - tds_amount` aggregated across all included tickets. |
+| 6 | GST = `base_amount × 0.18` if `gst_applicable = true`, else 0 per ticket. |
+| 7 | TDS = `base_amount × 0.10` if `tds_applicable = true`, else 0 per ticket. |
+| 8 | Invoice UID format: `INV-YYYY-####` — sequence number resets annually (IST) and is padded to 4 digits. |
+| 9 | Dual PDF documents are generated and stored in Supabase Storage bucket `'invoices'`: Summary Invoice as `{invoice_uid}.pdf` and Patient Annexure as `{invoice_uid}_annexure.pdf`. |
 
 ---
 
 ### 7.2 Database Schema
 
 ```sql
+-- public.invoices holds aggregated hospital invoice metadata
 CREATE TABLE public.invoices (
   id                         uuid PRIMARY KEY DEFAULT extensions.uuid_generate_v4(),
   uid                        varchar(30) NOT NULL UNIQUE,
-  ticket_id                  uuid NOT NULL UNIQUE REFERENCES public.tickets(id) ON DELETE RESTRICT,
-  hospital_service_charge_id uuid NOT NULL REFERENCES public.hospital_service_charges(id),
+  hospital_id                uuid NOT NULL REFERENCES public.hospitals(id) ON DELETE RESTRICT,
+  start_date                 date NOT NULL,
+  end_date                   date NOT NULL,
+  hospital_service_charge_id uuid REFERENCES public.hospital_service_charges(id), -- For backward compatibility
   base_amount                numeric(12,2) NOT NULL,
   gst_amount                 numeric(12,2) NOT NULL DEFAULT 0,
   tds_amount                 numeric(12,2) NOT NULL DEFAULT 0,
   total_amount               numeric(12,2) NOT NULL,
-  pdf_url                    text NOT NULL,
+  pdf_url                    text NOT NULL,          -- Point-in-time Summary Invoice PDF
+  annexure_url               text NOT NULL,          -- Point-in-time Detailed Patient Annexure PDF
   generated_by               uuid REFERENCES public.users(id) ON DELETE SET NULL,
   generated_at               timestamptz DEFAULT now(),
   created_at                 timestamptz DEFAULT now()
 );
 
-CREATE INDEX idx_invoices_ticket ON public.invoices(ticket_id);
-CREATE INDEX idx_invoices_date   ON public.invoices(generated_at DESC);
-
-ALTER TABLE public.invoices ENABLE ROW LEVEL SECURITY;
+-- Related tickets are linked to their respective invoice via foreign key
+ALTER TABLE public.tickets ADD COLUMN invoice_id uuid REFERENCES public.invoices(id) ON DELETE SET NULL;
+CREATE INDEX idx_tickets_invoice ON public.tickets(invoice_id);
 ```
 
 ---
@@ -1871,16 +1878,26 @@ ALTER TABLE public.invoices ENABLE ROW LEVEL SECURITY;
 
 ```typescript
 // Server-side, inside POST /api/invoices handler:
-const todayIST    = getTodayIST()                    // "2026-05-16"
-const dateCompact = todayIST.replace(/-/g, '')       // "20260516"
+const currentYear = new Date().getFullYear()
 
-const { count } = await supabase
+const { data: lastInvoice } = await supabase
   .from('invoices')
-  .select('*', { count: 'exact', head: true })
-  .like('uid', `INV-${dateCompact}-%`)
+  .select('uid')
+  .like('uid', `INV-${currentYear}-%`)
+  .order('uid', { ascending: false })
+  .limit(1)
+  .maybeSingle()
 
-const sequence = String((count ?? 0) + 1).padStart(4, '0')
-const uid = `INV-${dateCompact}-${sequence}`          // "INV-20260516-0001"
+let nextNumber = 1
+if (lastInvoice) {
+  const parts = lastInvoice.uid.split('-')
+  const lastNum = parseInt(parts[2], 10)
+  if (!isNaN(lastNum)) {
+    nextNumber = lastNum + 1
+  }
+}
+const padNum = String(nextNumber).padStart(4, '0')
+const uid = `INV-${currentYear}-${padNum}` // "INV-2026-0001"
 ```
 
 ---
@@ -1889,47 +1906,45 @@ const uid = `INV-${dateCompact}-${sequence}`          // "INV-20260516-0001"
 
 #### `POST /api/invoices`
 - **Auth:** accountant only
-- **Zod schema:** `z.object({ ticket_id: z.string().uuid() })`
+- **Zod schema:** `z.object({ hospital_id: z.string().uuid(), start_date: z.string(), end_date: z.string() })`
 - **Logic (8 steps in order):**
-  1. Fetch ticket by `ticket_id` → 404 if not found
-  2. Confirm `ticket.status = 'completed'` → 400 if not
-  3. Confirm no existing invoice for this `ticket_id` → 409 Conflict if exists
-  4. Fetch active charge (§6.3) for `ticket.hospital_id` + `ticket.service_type_id` → 400 if none
-  5. Calculate: `base = charge.amount`, `gst = gst_applicable ? base × 0.18 : 0`, `tds = tds_applicable ? base × 0.10 : 0`, `total = base + gst − tds`
-  6. Generate UID (§7.3)
-  7. Generate PDF via `lib/pdf-utils.ts` → upload to `invoices` bucket → get URL
-  8. INSERT invoice row
+  1. Fetch hospital details by `hospital_id` -> 404 if not found
+  2. Query completed, unbilled tickets from that hospital in the specified range.
+  3. Validate at least 1 completed unbilled ticket is matching.
+  4. Fetch active charge rates for each ticket's service type at its exact completion date to compute base amounts, GST, and TDS.
+  5. Sum up base amounts, GST, TDS, and total receivable across all matched tickets.
+  6. Generate sequentially incrementing INV UID (§7.3).
+  7. Generate two separate PDFs: Summary Invoice and Detailed Patient Annexure. Upload both to `invoices` storage bucket.
+  8. INSERT invoice record in DB, and UPDATE all matching tickets to link them to `invoice_id`.
 - **Response:** `ApiResponse<Invoice>`
 
 ---
 
 #### `GET /api/invoices`
 - **Auth:** accountant only
-- **Query params:** `from?`, `to?`, `hospital_id?`, `page?`, `pageSize?`
-- **Logic:** JOIN tickets, hospitals, service_types. ORDER BY `generated_at DESC`. Paginated.
-- **Response:** `ApiResponse<PaginatedResponse<Invoice & { ticket_uid, hospital_name, service_name }>>`
+- **Logic:** Joins hospitals and related tickets. Returns hospital details, billing range, billed cases count, aggregated amounts, and signed URLs.
+- **Response:** `ApiResponse<Invoice[]>`
 
 ---
 
 #### `GET /api/invoices/[id]/pdf`
 - **Auth:** accountant only
-- **Logic:** Fetch invoice, generate signed Supabase Storage URL (60-min expiry) → 302 redirect
+- **Logic:** Fetch invoice, generate signed Supabase Storage URL (60-min expiry) for the summary invoice (`{invoice_uid}.pdf`) -> 302 redirect.
 - **Response:** 302 redirect to signed URL
 
 ---
 
-### 7.5 PDF Layout
+#### `GET /api/invoices/[id]/annexure`
+- **Auth:** accountant only
+- **Logic:** Fetch invoice, generate signed Supabase Storage URL (60-min expiry) for the patient annexure (`{invoice_uid}_annexure.pdf`) -> 302 redirect.
+- **Response:** 302 redirect to signed URL
 
-> Final invoice design to be provided by Anish. The following dynamic fields are confirmed. Do not hard-code them.
+---
 
-Dynamic fields (populate from DB at generation time):
-- Invoice UID (e.g. INV-20260516-0001)
-- Generated date and time in IST
-- Hospital name, address, city
-- Service type name and category
-- Ticket UID
-- Base amount, GST amount (with rate), TDS amount (with rate), Total amount
-- Generated by (accountant full name)
+### 7.5 PDF Layouts
+
+* **Summary Invoice PDF**: A professional single-page document outlining Seragen coordinate details, hospital info, billing period, total billed cases, and net subtotal, GST (18%), TDS (10%), and Grand Total calculations.
+* **Patient Annexure PDF**: A separate multi-page document displaying a comprehensive data table: `S.No`, `Ticket ID`, `Patient Name`, `Service Name`, `Completion Date`, `Base rate`, `GST`, `TDS`, and `Total`. Supports dynamic multi-page pagination.
 
 ---
 
@@ -1941,27 +1956,28 @@ Dynamic fields (populate from DB at generation time):
 - Title: "Billing & Invoices"
 - Right: "+ Generate Invoice" button (`accent` variant)
 
-**Filter toolbar:** Date range (From / To) | Hospital dropdown | Search (by invoice UID or ticket UID)
+**Filter toolbar:** Date range (From / To) | Hospital dropdown | Search (by invoice UID or hospital name)
 
-**Invoices table columns:** Invoice UID | Ticket UID | Hospital | Service | Base Amount | GST | TDS | Total | Date | Actions
+**Invoices table columns:** Invoice UID | Hospital Name | Billing Period | Cases Billed | Base Amount | GST | TDS | Total Receivable | Generated Date | Actions
 
-Actions per row: "View PDF" (`outline`, opens signed URL in new tab) | "Download" (`secondary`, file download)
+**Actions per row:**
+* **Invoice PDF** (`secondary` outline): Opens secure summary invoice PDF in a new tab.
+* **Annexure PDF** (`pink` outline): Opens secure detailed patient annexure PDF in a new tab.
 
 ---
 
-#### `GenerateInvoiceModal.tsx`
+#### `GenerateInvoiceModal`
 
-Modal size: `lg`
-Title: "Generate Invoice"
+Modal size: `xl`
+Title: "GENERATE HOSPITAL INVOICE"
 
-- `SearchableSelect` for completed tickets with no existing invoice — fetches `GET /api/tickets?status=completed&no_invoice=true`
-- On ticket selection: shows info box + invoice preview card:
-  - Hospital, Service, Active charge rate
-  - Estimated total with GST/TDS breakdown (read-only)
-- Confirm button (`accent`, "Generate & Save PDF") — disabled until a ticket is selected
-- Error display if no active charge exists for the selected ticket
+- Dropdown for active hospitals + date picker inputs for Start Date and End Date.
+- Select actions trigger a real-time reactive lookup of completed unbilled cases falling in the range.
+- Shows a **Preview Cases Table** detailing matching cases inside the modal.
+- Renders the aggregated live billing estimates (Subtotal, GST, TDS, Grand Total).
+- Confirm button (`pink` primary, "Confirm & Generate Invoice") is disabled unless at least 1 ticket matches.
 
-On confirm: `POST /api/invoices` → success toast → close → refresh invoice table
+On confirm: `POST /api/invoices` -> success toast -> close -> refresh invoice table
 
 ---
 
@@ -2514,7 +2530,7 @@ All items below are confirmed and final. Do not re-open without explicit instruc
 | D9 | C | Multiple active charges for same hospital+service pair → latest created_at wins | Confirmed |
 | D10 | C | Hospital charges accessible and manageable by accountant only | Confirmed |
 | D11 | D | Invoice generation is manual — accountant triggers it | Confirmed |
-| D12 | D | One invoice per ticket, no regeneration | Confirmed |
+| D12 | D | Tickets are linked to at most one invoice, invoices are immutable and cannot be regenerated | Confirmed |
 | D13 | E | service_types.kit is already structured JSONB — no migration needed | Confirmed |
 | D14 | E | Inventory deduction on ticket close is fully automatic | Confirmed |
 | D15 | E | FE override window = 24 hours from ticket.completed_at | Confirmed |
