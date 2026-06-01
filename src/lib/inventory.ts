@@ -8,14 +8,15 @@ export async function autoCreateConsumptions(ticketId: string): Promise<boolean>
   try {
     const supabase = createServiceClient()
 
-    // 1. Fetch ticket details (including assigned FE and service type kit description)
+    // 1. Fetch ticket details (including assigned FE, service type kit, and diagnostics service type kits)
     const { data: ticket, error: ticketError } = await supabase
       .from('tickets')
       .select(`
         id, 
         assigned_to, 
         service_type_id, 
-        service_type:service_types(kit)
+        service_type:service_types(kit),
+        diagnostics:ticket_diagnostics(is_cancelled, service_type:service_types(kit))
       `)
       .eq('id', ticketId)
       .single()
@@ -26,10 +27,29 @@ export async function autoCreateConsumptions(ticketId: string): Promise<boolean>
     }
 
     const feId = ticket.assigned_to
+
+    // Aggregate kit descriptions from both ticket-level service type and all non-cancelled diagnostics
+    let combinedKitText = ''
     const serviceType = Array.isArray(ticket.service_type)
       ? ticket.service_type[0]
       : (ticket.service_type as any)
-    const kitText = serviceType?.kit
+    if (serviceType?.kit) {
+      combinedKitText += ' ' + serviceType.kit
+    }
+
+    const diagnostics = (ticket.diagnostics || []) as any[]
+    for (const diag of diagnostics) {
+      if (!diag.is_cancelled) {
+        const diagServiceType = Array.isArray(diag.service_type)
+          ? diag.service_type[0]
+          : diag.service_type
+        if (diagServiceType?.kit) {
+          combinedKitText += ' ' + diagServiceType.kit
+        }
+      }
+    }
+
+    const kitText = combinedKitText.trim()
 
     // If no FE is assigned or there's no kit required, do nothing
     if (!feId || !kitText || kitText.trim() === '') {
