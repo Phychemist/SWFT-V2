@@ -1960,7 +1960,7 @@ CREATE POLICY "system can insert consumptions"
 INSERT INTO public.users (username, password_hash, full_name, role)
 VALUES (
   'accountant',
-  '$2b$12$Kk0GpeV1jV6F7z2X9H3i/O7a/n8m5G2Z9l8m6C8O1gE1wE2wE3wE4', -- Hashed value of 'Accountant@1234'
+  '$2b$12$gFZlG2.GXa4uU9Jag0zmoeIiNRUcWNDyeAm1.TG/Jw2SI.zvBShU2', -- Hashed value of 'Accountant@1234'
   'Test Accountant',
   'accountant'
 ) ON CONFLICT DO NOTHING;
