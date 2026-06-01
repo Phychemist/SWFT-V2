@@ -3,6 +3,7 @@ import { createServiceClient } from '@/lib/supabase-server'
 import { getSession } from '@/lib/auth'
 import { z } from 'zod'
 import type { ApiResponse } from '@/lib/types'
+import { autoCreateConsumptions } from '@/lib/inventory'
 
 const overrideConsumptionSchema = z.object({
   quantity_used: z.number().int().positive(),
@@ -30,6 +31,15 @@ export async function GET(request: NextRequest) {
     const url = new URL(request.url)
     const ticketId = url.searchParams.get('ticket_id')
     const feId = url.searchParams.get('fe_id')
+
+    if (ticketId) {
+      // Automatically attempt to create default consumptions on request
+      try {
+        await autoCreateConsumptions(ticketId)
+      } catch (err) {
+        console.error('[GET /api/inventory/consumptions] Failed to auto-create consumptions:', err)
+      }
+    }
 
     const supabase = createServiceClient()
 
@@ -157,19 +167,7 @@ export async function PATCH_handler(request: NextRequest) {
       )
     }
 
-    // 2. Verify 24-hour override window (from consumption created_at date)
-    const completionTime = new Date(consumption.created_at).getTime()
-    const currentTime = Date.now()
-    const diffHours = (currentTime - completionTime) / (1000 * 60 * 60)
-
-    if (diffHours > 24) {
-      return NextResponse.json<ApiResponse<null>>(
-        { success: false, error: 'The 24-hour override window has closed for this ticket.' },
-        { status: 400 }
-      )
-    }
-
-    // 3. Verify stock safety (if quantity increases, make sure FE has enough personal stock holdings)
+    // 2. Verify stock safety (if quantity increases, make sure FE has enough personal stock holdings)
     const diffQuantity = quantity_used - consumption.quantity_used
     if (diffQuantity > 0) {
       // Calculate FE's personal stock holdings for this item
