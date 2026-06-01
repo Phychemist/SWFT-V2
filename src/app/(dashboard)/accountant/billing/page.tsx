@@ -168,7 +168,7 @@ export default function AccountantBillingPage() {
     const grandTotal = baseTotal + gstTotal - tdsTotal
 
     return (
-        <div className="flex flex-col min-h-screen bg-[var(--gray-50)] pb-12 rose-theme">
+        <div className="flex flex-col min-h-screen bg-[var(--gray-50)] pb-12">
             {/* Header */}
             <div className="bg-white border-b border-[var(--border-light)] sticky top-0 z-10 px-6 py-4">
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -185,7 +185,7 @@ export default function AccountantBillingPage() {
                             setError(null)
                             setShowModal(true)
                         }}
-                        className="bg-pink-600 hover:bg-pink-700 text-white text-xs font-bold py-2.5 px-4 rounded-xl shadow-sm flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer animate-fade-in"
+                        className="bg-[var(--primary-600)] hover:bg-[var(--primary-700)] text-white text-xs font-bold py-2.5 px-4 rounded-xl shadow-sm flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer animate-fade-in"
                     >
                         <Plus size={14} /> Generate Invoice
                     </button>
@@ -218,7 +218,7 @@ export default function AccountantBillingPage() {
                             <div className="date-pair flex items-center gap-2">
                                 <input 
                                     type="date" 
-                                    className="h-9 px-3 border border-gray-300 rounded-lg text-xs bg-white text-gray-700 focus:outline-none focus:border-pink-400" 
+                                    className="h-9 px-3 border border-gray-300 rounded-lg text-xs bg-white text-gray-700 focus:outline-none focus:border-[var(--primary-400)]" 
                                     value={billingFrom}
                                     onChange={(e) => setBillingFrom(e.target.value)}
                                     style={{ width: '130px' }}
@@ -226,7 +226,7 @@ export default function AccountantBillingPage() {
                                 <span className="text-gray-400 text-xs">to</span>
                                 <input 
                                     type="date" 
-                                    className="h-9 px-3 border border-gray-300 rounded-lg text-xs bg-white text-gray-700 focus:outline-none focus:border-pink-400" 
+                                    className="h-9 px-3 border border-gray-300 rounded-lg text-xs bg-white text-gray-700 focus:outline-none focus:border-[var(--primary-400)]" 
                                     value={billingTo}
                                     onChange={(e) => setBillingTo(e.target.value)}
                                     style={{ width: '130px' }}
@@ -248,7 +248,7 @@ export default function AccountantBillingPage() {
 
                     <div className="overflow-x-auto">
                         {loading ? (
-                            <div className="p-12 flex justify-center"><Loader2 size={32} className="animate-spin text-pink-600" /></div>
+                            <div className="p-12 flex justify-center"><Loader2 size={32} className="animate-spin text-[var(--primary-600)]" /></div>
                         ) : filteredInvoices.length === 0 ? (
                             <div className="p-12 text-center text-gray-400">
                                 <Receipt size={40} className="mx-auto mb-3 opacity-30" />
@@ -293,7 +293,7 @@ export default function AccountantBillingPage() {
                                             <td className="p-4 text-right text-red-500">
                                                 {inv.tds_amount > 0 ? `-₹${inv.tds_amount.toLocaleString('en-IN')}` : '—'}
                                             </td>
-                                            <td className="p-4 text-right font-extrabold text-pink-600 text-sm">₹{inv.total_amount.toLocaleString('en-IN')}</td>
+                                            <td className="p-4 text-right font-extrabold text-[var(--primary-600)] text-sm">₹{inv.total_amount.toLocaleString('en-IN')}</td>
                                             <td className="p-4 text-gray-400 font-semibold">{formatDate(inv.generated_at)}</td>
                                             <td className="p-4 text-center">
                                                 <div className="flex items-center justify-center gap-1.5">
@@ -306,7 +306,7 @@ export default function AccountantBillingPage() {
                                                     </button>
                                                     <button
                                                         onClick={() => handleDownloadAnnexure(inv.id)}
-                                                        className="bg-pink-50 hover:bg-pink-100 border border-pink-200 text-pink-700 text-[10px] font-bold py-1 px-2.5 rounded transition-colors cursor-pointer"
+                                                        className="bg-[var(--primary-50)] hover:bg-[var(--primary-100)] border border-[var(--primary-200)] text-[var(--primary-700)] text-[10px] font-bold py-1 px-2.5 rounded transition-colors cursor-pointer"
                                                         title="Download Patient Claims Annexure PDF"
                                                     >
                                                         Annexure PDF
@@ -329,7 +329,7 @@ export default function AccountantBillingPage() {
                         <div className="bg-gray-50 border-b border-gray-100 p-5 flex items-center justify-between">
                             <div>
                                 <h2 className="font-bold text-gray-800 text-base flex items-center gap-1.5">
-                                    <Receipt className="text-pink-600" />
+                                    <Receipt className="text-[var(--primary-600)]" />
                                     GENERATE HOSPITAL INVOICE
                                 </h2>
                                 <p className="text-[10px] text-gray-400 mt-0.5 uppercase tracking-wide">Generate bulk invoice and detailed patient annexure</p>
@@ -356,7 +356,7 @@ export default function AccountantBillingPage() {
                                             value={selectedHospitalId}
                                             onChange={(e) => setSelectedHospitalId(e.target.value)}
                                             required
-                                            className="w-full bg-white px-3 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-200 focus:border-pink-400 appearance-none cursor-pointer pr-10 text-gray-800 font-bold"
+                                            className="w-full bg-white px-3 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--primary-200)] focus:border-[var(--primary-400)] appearance-none cursor-pointer pr-10 text-gray-800 font-bold"
                                         >
                                             <option value="">Choose Hospital...</option>
                                             {hospitalsList.filter(h => h.is_active !== false).map((h) => (
@@ -377,7 +377,7 @@ export default function AccountantBillingPage() {
                                         value={startDate}
                                         onChange={(e) => setStartDate(e.target.value)}
                                         required
-                                        className="w-full bg-white px-3 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-200 focus:border-pink-400 text-gray-800 font-bold"
+                                        className="w-full bg-white px-3 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--primary-200)] focus:border-[var(--primary-400)] text-gray-800 font-bold"
                                     />
                                 </div>
 
@@ -389,7 +389,7 @@ export default function AccountantBillingPage() {
                                         value={endDate}
                                         onChange={(e) => setEndDate(e.target.value)}
                                         required
-                                        className="w-full bg-white px-3 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-200 focus:border-pink-400 text-gray-800 font-bold"
+                                        className="w-full bg-white px-3 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--primary-200)] focus:border-[var(--primary-400)] text-gray-800 font-bold"
                                     />
                                 </div>
                             </div>
@@ -397,7 +397,7 @@ export default function AccountantBillingPage() {
                             {/* Draft Tickets Table Preview */}
                             {loadingPreview ? (
                                 <div className="p-6 flex flex-col items-center justify-center gap-2 border border-dashed border-gray-200 rounded-2xl bg-gray-50/50">
-                                    <Loader2 className="animate-spin text-pink-600" size={24} />
+                                    <Loader2 className="animate-spin text-[var(--primary-600)]" size={24} />
                                     <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Fetching Unbilled Completed Cases...</span>
                                 </div>
                             ) : previewTickets.length > 0 ? (
@@ -429,15 +429,15 @@ export default function AccountantBillingPage() {
                                     </div>
 
                                     {/* Aggregated Totals Preview */}
-                                    <div className="border border-pink-100 bg-pink-50/10 rounded-2xl p-4 space-y-3">
-                                        <div className="font-bold text-pink-900 uppercase tracking-wider text-[10px] flex items-center justify-between">
+                                    <div className="border border-[var(--primary-100)] bg-[var(--primary-50)]/10 rounded-2xl p-4 space-y-3">
+                                        <div className="font-bold text-[var(--primary-900)] uppercase tracking-wider text-[10px] flex items-center justify-between">
                                             <span>Invoice Aggregation Preview</span>
-                                            <span className="bg-pink-50 border border-pink-100 text-pink-700 px-2 py-0.5 rounded font-extrabold uppercase">
+                                            <span className="bg-[var(--primary-50)] border border-[var(--primary-100)] text-[var(--primary-700)] px-2 py-0.5 rounded font-extrabold uppercase">
                                                 {previewTickets.length} cases
                                             </span>
                                         </div>
 
-                                        <div className="space-y-2 border-b border-pink-100/30 pb-3">
+                                        <div className="space-y-2 border-b border-[var(--primary-100)]/30 pb-3">
                                             <div className="flex justify-between items-center text-xs">
                                                 <span className="text-gray-400 font-semibold uppercase tracking-wide">Cases Subtotal</span>
                                                 <span className="font-bold text-gray-800">₹{baseTotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
@@ -454,10 +454,10 @@ export default function AccountantBillingPage() {
 
                                         <div className="flex justify-between items-center shrink-0">
                                             <div>
-                                                <span className="font-bold text-pink-800 uppercase tracking-wider text-[10px] block">Grand Total Preview</span>
+                                                <span className="font-bold text-[var(--primary-800)] uppercase tracking-wider text-[10px] block">Grand Total Preview</span>
                                                 <span className="text-[9px] text-gray-400">Total hospital accounts receivable sum</span>
                                             </div>
-                                            <span className="text-xl font-extrabold text-pink-600">₹{grandTotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                            <span className="text-xl font-extrabold text-[var(--primary-600)]">₹{grandTotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -476,7 +476,7 @@ export default function AccountantBillingPage() {
                                 <button
                                     type="submit"
                                     disabled={loadingAction || loadingPreview || previewTickets.length === 0}
-                                    className="w-full py-3.5 bg-pink-600 hover:bg-pink-700 disabled:bg-gray-200 disabled:text-gray-400 text-white font-bold rounded-2xl flex items-center justify-center gap-1.5 transition-all shadow-lg active:scale-98 cursor-pointer"
+                                    className="w-full py-3.5 bg-[var(--primary-600)] hover:bg-[var(--primary-700)] disabled:bg-gray-200 disabled:text-gray-400 text-white font-bold rounded-2xl flex items-center justify-center gap-1.5 transition-all shadow-lg active:scale-98 cursor-pointer"
                                 >
                                     {loadingAction ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
                                     Confirm & Generate Invoice

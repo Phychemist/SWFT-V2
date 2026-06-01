@@ -13,7 +13,7 @@ export function DashboardShell({ children, user }: DashboardShellProps) {
     const [sidebarOpen, setSidebarOpen] = useState(false)
 
     return (
-        <div className={`min-h-screen bg-[var(--background)] ${user.role === 'accountant' ? 'rose-theme' : ''}`}>
+        <div className="min-h-screen bg-[var(--background)]">
             <Sidebar
                 userRole={user.role}
                 isOpen={sidebarOpen}

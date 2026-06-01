@@ -503,7 +503,7 @@ export default function FundManagementPage() {
                             setAllocateError('')
                             setIsAllocateModalOpen(true)
                         }}
-                        className="btn btn-primary bg-pink-600 hover:bg-pink-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-150 shadow-sm cursor-pointer"
+                        className="btn btn-primary bg-[var(--primary-600)] hover:bg-[var(--primary-700)] text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-150 shadow-sm cursor-pointer"
                     >
                         Allocate Funds
                     </button>
@@ -528,7 +528,7 @@ export default function FundManagementPage() {
                 </div>
 
                 <div className="stat-card bg-white border border-gray-200 rounded-xl p-5 shadow-sm flex items-center gap-3.5">
-                    <div className="stat-icon w-11 h-11 rounded-full bg-pink-50 text-pink-500 flex items-center justify-center shrink-0 text-xl">
+                    <div className="stat-icon w-11 h-11 rounded-full bg-[var(--primary-50)] text-[var(--primary-500)] flex items-center justify-center shrink-0 text-xl">
                         <TrendingUp size={20} />
                     </div>
                     <div className="stat-body">
@@ -543,12 +543,12 @@ export default function FundManagementPage() {
                 </div>
 
                 <div className="stat-card bg-white border border-gray-200 rounded-xl p-5 shadow-sm flex items-center gap-3.5">
-                    <div className="stat-icon w-11 h-11 rounded-full bg-pink-50 text-pink-600 flex items-center justify-center shrink-0 text-xl">
+                    <div className="stat-icon w-11 h-11 rounded-full bg-[var(--primary-50)] text-[var(--primary-600)] flex items-center justify-center shrink-0 text-xl">
                         <Boxes size={20} />
                     </div>
                     <div className="stat-body">
                         <div className="stat-label text-xs font-semibold text-gray-400 uppercase tracking-wider">Available Seragen Account Balance</div>
-                        <div className="stat-value text-2xl font-bold text-pink-600 mt-1">
+                        <div className="stat-body-value text-2xl font-bold text-[var(--primary-600)] mt-1">
                             {loadingStats ? '...' : formatCurrency(stats.available_seragen_account_balance)}
                         </div>
                         <div className="stat-sub text-[11.5px] text-gray-400 mt-0.5">
@@ -640,7 +640,7 @@ export default function FundManagementPage() {
                                 <div className="date-pair flex items-center gap-2">
                                     <input 
                                         type="date" 
-                                        className="h-9 px-3 border border-gray-300 rounded-lg text-xs bg-white text-gray-700 focus:outline-none focus:border-pink-400" 
+                                        className="h-9 px-3 border border-gray-300 rounded-lg text-xs bg-white text-gray-700 focus:outline-none focus:border-[var(--primary-400)]" 
                                         value={activityFrom}
                                         onChange={(e) => setActivityFrom(e.target.value)}
                                         style={{ width: '130px' }}
@@ -648,7 +648,7 @@ export default function FundManagementPage() {
                                     <span className="text-gray-400 text-xs">to</span>
                                     <input 
                                         type="date" 
-                                        className="h-9 px-3 border border-gray-300 rounded-lg text-xs bg-white text-gray-700 focus:outline-none focus:border-pink-400" 
+                                        className="h-9 px-3 border border-gray-300 rounded-lg text-xs bg-white text-gray-700 focus:outline-none focus:border-[var(--primary-400)]" 
                                         value={activityTo}
                                         onChange={(e) => setActivityTo(e.target.value)}
                                         style={{ width: '130px' }}
@@ -717,7 +717,7 @@ export default function FundManagementPage() {
                                                 </td>
                                                 <td className="px-6 py-4">
                                                     {log.type === 'allocation' ? (
-                                                        <span className="badge badge-pink bg-pink-50 border border-pink-200 text-pink-600 flex items-center gap-1 w-fit rounded-full px-2.5 py-0.5 text-xs font-semibold">
+                                                        <span className="badge badge-primary bg-[var(--primary-50)] border border-[var(--primary-200)] text-[var(--primary-600)] flex items-center gap-1 w-fit rounded-full px-2.5 py-0.5 text-xs font-semibold">
                                                             Allocation
                                                         </span>
                                                     ) : (
@@ -1162,7 +1162,7 @@ export default function FundManagementPage() {
                         </Button>
                         <Button 
                             type="submit" 
-                            className="btn btn-primary bg-pink-600 hover:bg-pink-700 text-white font-medium"
+                            className="btn btn-primary bg-[var(--primary-600)] hover:bg-[var(--primary-700)] text-white font-medium"
                             isLoading={submittingReceive}
                         >
                             Record Entry
@@ -1180,12 +1180,12 @@ export default function FundManagementPage() {
             >
                 <form onSubmit={handleAllocateFunds} className="space-y-4">
                     {/* Display Point-In-Time available Seragen balance */}
-                    <div className="balance-chip flex items-center justify-between p-3.5 rounded-xl bg-pink-50 border border-pink-200 text-pink-900 text-sm mb-4">
+                    <div className="balance-chip flex items-center justify-between p-3.5 rounded-xl bg-[var(--primary-50)] border border-[var(--primary-200)] text-[var(--primary-900)] text-sm mb-4">
                         <div className="flex items-center gap-2">
-                            <Boxes size={18} className="text-pink-600 shrink-0" />
-                            <span className="font-semibold text-pink-800">Available Seragen Account Balance:</span>
+                            <Boxes size={18} className="text-[var(--primary-600)] shrink-0" />
+                            <span className="font-semibold text-[var(--primary-800)]">Available Seragen Account Balance:</span>
                         </div>
-                        <span className="font-extrabold text-pink-700 text-lg">
+                        <span className="font-extrabold text-[var(--primary-700)] text-lg">
                             {formatCurrency(stats.available_seragen_account_balance)}
                         </span>
                     </div>
@@ -1256,7 +1256,7 @@ export default function FundManagementPage() {
                         <button
                             type="button"
                             onClick={addAllocationRow}
-                            className="text-xs font-semibold text-pink-600 hover:text-pink-700 flex items-center gap-1 p-1 hover:bg-pink-50 rounded-lg transition-colors"
+                            className="text-xs font-semibold text-[var(--primary-600)] hover:text-[var(--primary-700)] flex items-center gap-1 p-1 hover:bg-[var(--primary-50)] rounded-lg transition-colors"
                         >
                             <Plus size={14} />
                             Add Another Recipient
@@ -1265,7 +1265,7 @@ export default function FundManagementPage() {
                         <div className="text-right">
                             <span className="text-xs text-gray-500 font-semibold">Total Disbursements:</span>
                             <span className={`text-base font-extrabold ml-1.5 ${
-                                totalAllocationToDistribute > stats.available_seragen_account_balance ? 'text-rose-600 animate-pulse' : 'text-pink-600'
+                                totalAllocationToDistribute > stats.available_seragen_account_balance ? 'text-rose-600 animate-pulse' : 'text-[var(--primary-600)]'
                             }`}>
                                 {formatCurrency(totalAllocationToDistribute)}
                             </span>
@@ -1303,7 +1303,7 @@ export default function FundManagementPage() {
                         </Button>
                         <Button 
                             type="submit" 
-                            className="btn btn-primary bg-pink-600 hover:bg-pink-700 text-white font-medium"
+                            className="btn btn-primary bg-[var(--primary-600)] hover:bg-[var(--primary-700)] text-white font-medium"
                             disabled={totalAllocationToDistribute > stats.available_seragen_account_balance}
                             isLoading={submittingAllocate}
                         >

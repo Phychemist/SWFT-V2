@@ -57,7 +57,7 @@ export default function AccountantInventoryPage() {
     const lowStockCount = items.filter(item => item.below_threshold).length
 
     return (
-        <div className="flex flex-col min-h-screen bg-[var(--gray-50)] pb-12 rose-theme">
+        <div className="flex flex-col min-h-screen bg-[var(--gray-50)] pb-12">
             {/* Header */}
             <div className="bg-white border-b border-[var(--border-light)] sticky top-0 z-10 px-6 py-4">
                 <div className="flex items-center justify-between">

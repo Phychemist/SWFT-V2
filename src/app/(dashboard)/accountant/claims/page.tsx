@@ -196,7 +196,7 @@ export default function AccountantClaimsPage() {
     }
 
     return (
-        <div className="flex flex-col min-h-screen bg-[var(--gray-50)] pb-12 rose-theme">
+        <div className="flex flex-col min-h-screen bg-[var(--gray-50)] pb-12">
             {/* Header */}
             <div className="bg-white border-b border-[var(--border-light)] sticky top-0 z-10 px-6 py-4">
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -270,7 +270,7 @@ export default function AccountantClaimsPage() {
                                 onClick={() => setStatusFilter(status)}
                                 className={`fpill px-4.5 py-1.5 rounded-full text-xs font-semibold border transition-all cursor-pointer ${
                                     statusFilter === status
-                                        ? 'bg-pink-600 border-pink-600 text-white font-bold'
+                                         ? 'bg-[var(--primary-600)] border-[var(--primary-600)] text-white font-bold'
                                         : 'bg-white border-gray-300 text-gray-600 hover:bg-gray-50'
                                 }`}
                             >
@@ -298,7 +298,7 @@ export default function AccountantClaimsPage() {
 
                     <div className="overflow-x-auto">
                         {loading ? (
-                            <div className="p-12 flex justify-center"><Loader2 size={32} className="animate-spin text-pink-600" /></div>
+                             <div className="p-12 flex justify-center"><Loader2 size={32} className="animate-spin text-[var(--primary-600)]" /></div>
                         ) : filteredClaims.length === 0 ? (
                             <div className="p-12 text-center text-gray-400">
                                 <Receipt size={40} className="mx-auto mb-3 opacity-30" />
@@ -332,7 +332,7 @@ export default function AccountantClaimsPage() {
                                                     {claim.claimant?.role === 'field_executive' ? 'Field Exec' : 'Manager'}
                                                 </span>
                                             </td>
-                                            <td className="p-4 font-bold text-pink-600">
+                                            <td className="p-4 font-bold text-[var(--primary-600)]">
                                                 {claim.ticket ? claim.ticket.uid : <span className="text-gray-400 font-normal">—</span>}
                                             </td>
                                             <td className="p-4 text-right font-extrabold text-gray-800 text-sm">₹{Number(claim.total_amount).toFixed(2)}</td>
@@ -387,7 +387,7 @@ export default function AccountantClaimsPage() {
                         <div className="bg-gray-50 border-b border-gray-100 p-5 flex items-center justify-between">
                             <div>
                                 <h2 className="font-bold text-gray-800 text-base flex items-center gap-1.5">
-                                    <Sliders className="text-pink-600" />
+                                    <Sliders className="text-[var(--primary-600)]" />
                                     CONFIGURE RATES & CAPS
                                 </h2>
                                 <p className="text-[10px] text-gray-400 mt-0.5 uppercase tracking-wide">Configure employee travel and meal limits</p>
@@ -414,7 +414,7 @@ export default function AccountantClaimsPage() {
                                     value={formPetrolRate}
                                     onChange={(e) => setFormPetrolRate(e.target.value)}
                                     required
-                                    className="w-full px-3 py-2.5 border border-[var(--border-default)] rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-200 focus:border-pink-400 bg-white font-bold"
+                                     className="w-full px-3 py-2.5 border border-[var(--border-default)] rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--primary-200)] focus:border-[var(--primary-400)] bg-white font-bold"
                                 />
                             </div>
 
@@ -461,7 +461,7 @@ export default function AccountantClaimsPage() {
                                 <button
                                     type="submit"
                                     disabled={loadingAction}
-                                    className="w-full py-3 bg-pink-600 hover:bg-pink-700 disabled:bg-gray-200 text-white font-bold rounded-xl flex items-center justify-center gap-1.5 transition-all shadow-md active:scale-98"
+                                     className="w-full py-3 bg-[var(--primary-600)] hover:bg-[var(--primary-700)] disabled:bg-gray-200 text-white font-bold rounded-xl flex items-center justify-center gap-1.5 transition-all shadow-md active:scale-98"
                                 >
                                     {loadingAction ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
                                     Save Configurations
@@ -480,7 +480,7 @@ export default function AccountantClaimsPage() {
                         <div className="bg-gray-50 border-b border-gray-100 p-5 flex items-center justify-between shrink-0">
                             <div>
                                 <h2 className="font-bold text-gray-800 text-base flex items-center gap-1.5">
-                                    <Receipt className="text-pink-600" />
+                                     <Receipt className="text-[var(--primary-600)]" />
                                     REVIEW EXPENSE CLAIM DETAILS
                                 </h2>
                                 <p className="text-[10px] text-gray-400 mt-0.5 uppercase tracking-wide">
@@ -572,8 +572,8 @@ export default function AccountantClaimsPage() {
                                         <span className="font-extrabold text-gray-700 block mt-0.5">₹{selectedClaim.petrol_rate_at_submission || 4.00}/km</span>
                                     </div>
                                     <div>
-                                        <span className="text-[9px] text-pink-800 font-bold uppercase block">Total Petrol Cost</span>
-                                        <span className="font-extrabold text-pink-600 block mt-0.5">₹{selectedClaim.petrol_amount}</span>
+                                         <span className="text-[9px] text-[var(--primary-800)] font-bold uppercase block">Total Petrol Cost</span>
+                                         <span className="font-extrabold text-[var(--primary-600)] block mt-0.5">₹{selectedClaim.petrol_amount}</span>
                                     </div>
                                 </div>
                             )}
@@ -628,7 +628,7 @@ export default function AccountantClaimsPage() {
                                                 href={url}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
-                                                className="relative aspect-square rounded-xl border border-gray-200 bg-gray-50 flex items-center justify-center overflow-hidden hover:opacity-90 hover:border-pink-300 transition-all cursor-pointer group"
+                                                className="relative aspect-square rounded-xl border border-gray-200 bg-gray-50 flex items-center justify-center overflow-hidden hover:opacity-90 hover:border-[var(--primary-300)] transition-all cursor-pointer group"
                                             >
                                                 {url.endsWith('.pdf') ? (
                                                     <div className="flex flex-col items-center justify-center p-2 text-center">
@@ -686,12 +686,12 @@ export default function AccountantClaimsPage() {
                             )}
 
                             {/* Claim Grand Total */}
-                            <div className="bg-pink-50 border border-pink-100/50 p-4 rounded-2xl flex items-center justify-between shrink-0">
+                            <div className="bg-[var(--primary-50)] border border-[var(--primary-100)]/50 p-4 rounded-2xl flex items-center justify-between shrink-0">
                                 <div>
-                                    <span className="font-bold text-pink-800 uppercase tracking-wider text-[10px] block">Grand Claim Total</span>
+                                    <span className="font-bold text-[var(--primary-800)] uppercase tracking-wider text-[10px] block">Grand Claim Total</span>
                                     <span className="text-[9px] text-gray-400">Total requested reimbursement sum</span>
                                 </div>
-                                <span className="text-xl font-extrabold text-pink-600">₹{Number(selectedClaim.total_amount).toFixed(2)}</span>
+                                <span className="text-xl font-extrabold text-[var(--primary-600)]">₹{Number(selectedClaim.total_amount).toFixed(2)}</span>
                             </div>
                         </div>
 
