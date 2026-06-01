@@ -1976,6 +1976,16 @@ VALUES
   ('EDTA tubes',   'piece',  12.00, 50)
 ON CONFLICT (name) DO NOTHING;
 
+-- 4. Grant table access to standard role-based users in postgrest
+GRANT ALL ON TABLE public.funds TO anon, authenticated, service_role;
+GRANT ALL ON TABLE public.fund_allocations TO anon, authenticated, service_role;
+GRANT ALL ON TABLE public.claim_rate_config TO anon, authenticated, service_role;
+GRANT ALL ON TABLE public.expense_claims TO anon, authenticated, service_role;
+GRANT ALL ON TABLE public.invoices TO anon, authenticated, service_role;
+GRANT ALL ON TABLE public.inventory_items TO anon, authenticated, service_role;
+GRANT ALL ON TABLE public.inventory_allocations TO anon, authenticated, service_role;
+GRANT ALL ON TABLE public.inventory_consumptions TO anon, authenticated, service_role;
+
 
 -- ==========================================
 -- MIGRATION: 20260527160000_hospital_invoices.sql
