@@ -17,7 +17,8 @@ import {
     ArrowUpNarrowWide,
     ArrowDownWideNarrow,
     CheckCircle2,
-    Calendar
+    Calendar,
+    Boxes
 } from 'lucide-react'
 import { useSearchParams } from 'next/navigation'
 
@@ -31,20 +32,78 @@ export default function FieldExecutiveDashboard() {
     const searchParams = useSearchParams()
 
     // State for filtering and sorting
-    const [status, setStatus] = useState<'active' | 'completed'>('active')
+    const [status, setStatus] = useState<'active' | 'completed' | 'inventory'>('active')
     const [sort, setSort] = useState<'asc' | 'desc'>('asc') // Default: Earliest First (asc)
+    const [inventoryItems, setInventoryItems] = useState<any[]>([])
+    const [loadingInventory, setLoadingInventory] = useState(false)
 
     // Sync tab from URL
     useEffect(() => {
         const tab = searchParams.get('tab')
         if (tab === 'completed') setStatus('completed')
+        else if (tab === 'inventory') setStatus('inventory')
         else setStatus('active')
     }, [searchParams])
+
+    const fetchFEInventory = async () => {
+        try {
+            setLoadingInventory(true)
+            const [resItems, resAllocs, resCons] = await Promise.all([
+                fetch('/api/inventory'),
+                fetch('/api/inventory/allocations'),
+                fetch('/api/inventory/consumptions')
+            ])
+            const [dataItems, dataAllocs, dataCons] = await Promise.all([
+                resItems.json(),
+                resAllocs.json(),
+                resCons.json()
+            ])
+
+            if (dataItems.success && dataAllocs.success && dataCons.success) {
+                const allocations = dataAllocs.data
+                const consumptions = dataCons.data
+
+                const holdingsMap = new Map<string, { total_alloc: number; total_cons: number }>()
+                for (const row of allocations) {
+                    const current = holdingsMap.get(row.item_id) || { total_alloc: 0, total_cons: 0 }
+                    holdingsMap.set(row.item_id, {
+                        ...current,
+                        total_alloc: current.total_alloc + row.quantity
+                    })
+                }
+                for (const row of consumptions) {
+                    const current = holdingsMap.get(row.item_id) || { total_alloc: 0, total_cons: 0 }
+                    holdingsMap.set(row.item_id, {
+                        ...current,
+                        total_cons: current.total_cons + row.quantity_used
+                    })
+                }
+
+                const computed = dataItems.data.map((item: any) => {
+                    const stats = holdingsMap.get(item.id) || { total_alloc: 0, total_cons: 0 }
+                    return {
+                        id: item.id,
+                        name: item.name,
+                        unit: item.unit,
+                        total_allocated: stats.total_alloc,
+                        total_consumed: stats.total_cons,
+                        current_holding: stats.total_alloc - stats.total_cons
+                    }
+                })
+                setInventoryItems(computed)
+            }
+        } catch (err) {
+            console.error('Failed to load FE inventory:', err)
+        } finally {
+            setLoadingInventory(false)
+        }
+    }
 
     const fetchTickets = async () => {
         try {
             setLoading(true)
-            const query = new URLSearchParams({ status, sort })
+            const ticketStatus = status === 'completed' ? 'completed' : 'active'
+            const query = new URLSearchParams({ status: ticketStatus, sort })
             const res = await fetch(`/api/field-executive/tickets?${query.toString()}`)
             const data = await res.json()
             if (data.success) {
@@ -66,7 +125,11 @@ export default function FieldExecutiveDashboard() {
     }
 
     useEffect(() => {
-        fetchTickets()
+        if (status === 'inventory') {
+            fetchFEInventory()
+        } else {
+            fetchTickets()
+        }
     }, [status, sort]) // Refetch on filter/sort change
 
     const filteredTickets = tickets.filter(ticket =>
@@ -179,52 +242,127 @@ export default function FieldExecutiveDashboard() {
                     <div className="flex items-center gap-1 p-1 bg-[var(--gray-100)] rounded-xl w-full">
                         <button
                             onClick={() => setStatus('active')}
-                            className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-sm font-bold transition-all ${status === 'active'
+                            className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-lg text-xs md:text-sm font-bold transition-all ${status === 'active'
                                 ? 'bg-white shadow-sm text-[var(--primary-600)]'
                                 : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
                                 }`}
                         >
-                            <User size={16} />
-                            My Assignments
+                            <User size={15} />
+                            Assignments
                         </button>
                         <button
                             onClick={() => setStatus('completed')}
-                            className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-sm font-bold transition-all ${status === 'completed'
+                            className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-lg text-xs md:text-sm font-bold transition-all ${status === 'completed'
                                 ? 'bg-white shadow-sm text-green-600'
                                 : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
                                 }`}
                         >
-                            <CheckCircle2 size={16} />
+                            <CheckCircle2 size={15} />
                             Completed
+                        </button>
+                        <button
+                            onClick={() => setStatus('inventory')}
+                            className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-lg text-xs md:text-sm font-bold transition-all ${status === 'inventory'
+                                ? 'bg-white shadow-sm text-pink-600'
+                                : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
+                                }`}
+                        >
+                            <Boxes size={15} />
+                            My Inventory
                         </button>
                     </div>
 
                     <div className="flex items-center justify-between">
-                        <h2 className="uppercase tracking-wider" style={{ fontSize: '20px', color: '#9ca3af', fontWeight: 400 }}>
-                            {status === 'active' ? `Pending Tasks (${tickets.length})` : `History (${tickets.length})`}
+                        <h2 className="uppercase tracking-wider font-bold" style={{ fontSize: '18px', color: '#9ca3af', fontWeight: 600 }}>
+                            {status === 'active' 
+                                ? `Pending Tasks (${tickets.length})` 
+                                : status === 'completed' 
+                                    ? `History (${tickets.length})` 
+                                    : `Inventory Holdings (${inventoryItems.length})`}
                         </h2>
 
-                        <div className="flex items-center gap-2">
+                        {status !== 'inventory' && (
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={() => setSort(prev => prev === 'asc' ? 'desc' : 'asc')}
+                                    className="flex items-center justify-center w-8 h-8 bg-white border border-[var(--border-light)] rounded-lg text-[var(--text-secondary)] hover:bg-[var(--gray-50)] transition-colors"
+                                    title={sort === 'asc' ? 'Earliest First' : 'Latest First'}
+                                >
+                                    {sort === 'asc' ? <ArrowUpNarrowWide size={16} /> : <ArrowDownWideNarrow size={16} />}
+                                </button>
+    
+                                <button
+                                    onClick={() => fetchTickets()}
+                                    className="text-[var(--primary-600)] p-2 rounded-full hover:bg-[var(--primary-50)] transition-colors"
+                                    title="Refresh"
+                                >
+                                    <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
+                                </button>
+                            </div>
+                        )}
+                        {status === 'inventory' && (
                             <button
-                                onClick={() => setSort(prev => prev === 'asc' ? 'desc' : 'asc')}
-                                className="flex items-center justify-center w-8 h-8 bg-white border border-[var(--border-light)] rounded-lg text-[var(--text-secondary)] hover:bg-[var(--gray-50)] transition-colors"
-                                title={sort === 'asc' ? 'Earliest First' : 'Latest First'}
-                            >
-                                {sort === 'asc' ? <ArrowUpNarrowWide size={16} /> : <ArrowDownWideNarrow size={16} />}
+                                onClick={() => fetchFEInventory()}
+                                className="text-pink-600 p-2 rounded-full hover:bg-pink-50 transition-colors"
+                                title="Refresh Inventory"
+                              >
+                                <RefreshCw size={16} className={loadingInventory ? 'animate-spin' : ''} />
                             </button>
-
-                            <button
-                                onClick={() => fetchTickets()}
-                                className="text-[var(--primary-600)] p-2 rounded-full hover:bg-[var(--primary-50)] transition-colors"
-                                title="Refresh"
-                            >
-                                <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
-                            </button>
-                        </div>
+                        )}
                     </div>
                 </div>
 
-                {loading && tickets.length === 0 ? (
+                {status === 'inventory' ? (
+                    loadingInventory ? (
+                        <div className="space-y-4">
+                            {[1, 2].map(i => (
+                                <div key={i} className="h-28 bg-white rounded-2xl animate-pulse border border-[var(--border-light)]" />
+                            ))}
+                        </div>
+                    ) : inventoryItems.length === 0 ? (
+                        <div className="py-12 flex flex-col items-center justify-center text-center px-8 bg-white rounded-2xl border border-dashed border-[var(--border-light)]">
+                            <div className="w-16 h-16 bg-[var(--gray-50)] rounded-full flex items-center justify-center text-[var(--text-muted)] mb-4">
+                                <Boxes size={32} />
+                            </div>
+                            <h3 className="font-bold text-[var(--text-primary)] text-lg">No inventory held</h3>
+                            <p className="text-[var(--text-muted)] text-sm mt-1">
+                                Contact the Backoffice Officer to allocate kit items to you.
+                            </p>
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {inventoryItems.map((item) => (
+                                <div 
+                                    key={item.id} 
+                                    className="bg-white rounded-2xl border border-[var(--border-light)] p-5 shadow-sm relative overflow-hidden"
+                                >
+                                    <div className="absolute top-0 left-0 w-full h-[3px] bg-pink-500" />
+                                    <div className="flex items-center justify-between mb-3">
+                                        <span className="font-bold text-gray-900 text-base">{item.name}</span>
+                                        <span className="bg-pink-50 border border-pink-100 text-pink-600 rounded-full uppercase text-[10px] font-bold tracking-wider px-2 py-0.5">
+                                            {item.unit}
+                                        </span>
+                                    </div>
+                                    
+                                    <div className="grid grid-cols-3 gap-2 mt-4 pt-4 border-t border-gray-50 text-center">
+                                        <div>
+                                            <div className="text-[10px] text-gray-400 font-semibold uppercase">Disbursed</div>
+                                            <div className="font-bold text-gray-800 mt-0.5">{item.total_allocated}</div>
+                                        </div>
+                                        <div>
+                                            <div className="text-[10px] text-gray-400 font-semibold uppercase">Consumed</div>
+                                            <div className="font-bold text-gray-800 mt-0.5">{item.total_consumed}</div>
+                                        </div>
+                                        <div>
+                                            <div className="text-[10px] text-pink-800 font-bold uppercase">In Hand</div>
+                                            <div className="font-extrabold text-pink-600 text-base mt-0.5">{item.current_holding}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )
+                ) : loading && tickets.length === 0 ? (
                     <div className="space-y-4">
                         {[1, 2, 3].map(i => (
                             <div key={i} className="h-36 bg-white rounded-2xl animate-pulse border border-[var(--border-light)]" />

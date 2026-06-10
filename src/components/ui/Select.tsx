@@ -9,11 +9,11 @@ interface SelectOption {
     disabled?: boolean
 }
 
-interface SelectProps extends Omit<SelectHTMLAttributes<HTMLSelectElement>, 'children'> {
+interface SelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
     label?: string
     error?: string
     hint?: string
-    options: SelectOption[]
+    options?: SelectOption[]
     placeholder?: string
     leftIcon?: React.ReactNode
 }
@@ -28,6 +28,7 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(
             placeholder = 'Select an option',
             className = '',
             leftIcon,
+            children,
             ...rest
         } = props
 
@@ -68,10 +69,12 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(
                         className={`${baseSelectStyles} ${borderStyles} ${paddingStyles} ${className}`}
                         {...rest}
                     >
-                        <option value="" disabled>
-                            {placeholder}
-                        </option>
-                        {options.map((option) => (
+                        {placeholder && (
+                            <option value="" disabled>
+                                {placeholder}
+                            </option>
+                        )}
+                        {options ? options.map((option) => (
                             <option
                                 key={option.value}
                                 value={option.value}
@@ -79,7 +82,7 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(
                             >
                                 {option.label}
                             </option>
-                        ))}
+                        )) : children}
                     </select>
 
                     <div className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-[var(--text-muted)]">

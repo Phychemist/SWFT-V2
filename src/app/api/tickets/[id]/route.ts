@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase-server'
 import { getSession, canEditTickets } from '@/lib/auth'
 import type { ApiResponse, Ticket } from '@/lib/types'
+import { autoCreateConsumptions } from '@/lib/inventory'
 
 interface RouteParams {
     params: Promise<{ id: string }>
@@ -280,6 +281,11 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
                 { success: false, error: error.message },
                 { status: 500 }
             )
+        }
+
+        // Trigger auto-consumption if in completed stage
+        if (updatedTicket.current_stage?.name.toLowerCase().trim() === 'submitted and closed') {
+            await autoCreateConsumptions(id)
         }
 
         return NextResponse.json<ApiResponse<Ticket>>({

@@ -274,29 +274,45 @@ When the accountant generates an invoice for a completed ticket, the system auto
 
 ### 8.1 What This Is
 
-After a ticket is completed, Seragen needs to bill the hospital for the service. This module handles generating that invoice, computing the correct amount with GST/TDS, generating a PDF, and storing it.
+After tickets are completed, Seragen bills the hospital for services. Invoices are generated at the **Hospital** level over a specified **Date Range** (Start Date & End Date) and contain multiple tickets (1:Many relationship). This module handles aggregating those unbilled tickets, computing point-in-time rates with GST/TDS, generating two separate PDFs (Summary Invoice and Patient Annexure), and storing them.
 
 ### 8.2 Generating an Invoice
 
 **What happens:**
-1. Accountant opens Billing & Invoices page
-2. Clicks "+ Generate Invoice"
-3. In the modal, selects a completed ticket that has no invoice yet (dropdown shows only qualifying tickets)
-4. On selection, the modal shows: hospital name, service name, active charge rate, and a live invoice preview with Base Amount, GST, TDS, and Total
-5. Accountant confirms → the system runs these 8 steps server-side:
-   1. Fetch the ticket — 404 if not found
-   2. Confirm ticket status is 'completed' — 400 if not
-   3. Confirm no invoice already exists for this ticket — 409 if one exists
-   4. Fetch the active charge for this hospital + service type — 400 if none
-   5. Calculate: base = charge amount; GST = base × 0.18 if applicable else 0; TDS = base × 0.10 if applicable else 0; total = base + GST − TDS
-   6. Generate Invoice UID: `INV-YYYYMMDD-####` where the sequence number resets daily and is padded to 4 digits (e.g. INV-20260516-0001)
-   7. Generate PDF via pdf-lib and upload to Supabase Storage bucket `invoices` at path `{invoice_id}/invoice.pdf`
-   8. Insert the invoice row
-6. Invoice appears in the table. "View PDF" opens a 60-minute signed URL. "Download" triggers a file download.
+1. Accountant opens the **Billing & Invoices** page.
+2. Clicks the **"+ Generate Invoice"** button (`accent` variant).
+3. In the `GenerateInvoiceModal` (size `xl`), selects:
+   - **Hospital** (from active hospitals dropdown)
+   - **Start Date** & **End Date** (via date pickers)
+4. Select actions trigger a real-time reactive lookup (calling `GET /api/billing/unbilled-tickets`) of completed, unbilled tickets from that hospital falling within the selected date range.
+5. The modal displays a **Preview Cases Table** listing all matching cases (Ticket ID, Patient Name, Service, Completion Date, Base Rate, GST, TDS, Total).
+6. The modal renders the live aggregated billing estimates:
+   - **Subtotal (Base Amount)**: Sum of base rates of all matching tickets.
+   - **GST (18%)**: Sum of GST amounts of all matching tickets (where GST is applicable).
+   - **TDS (10%)**: Sum of TDS amounts of all matching tickets (where TDS is applicable).
+   - **Grand Total**: `Subtotal + GST - TDS`.
+7. The **"Confirm & Generate Invoice"** button (`pink` primary) is disabled unless at least 1 completed unbilled ticket matches the selected criteria.
+8. Accountant clicks **"Confirm & Generate Invoice"** → the system runs these steps server-side inside `POST /api/invoices`:
+   1. Fetch hospital details by `hospital_id` -> 404 if not found.
+   2. Query completed, unbilled tickets from that hospital in the specified range.
+   3. Validate at least 1 completed unbilled ticket is matching -> 400 if none.
+   4. Fetch active charge rates for each ticket's hospital + service type at its exact completion date (point-in-time rates calculation to preserve audit integrity) to compute base rate, GST, and TDS.
+   5. Sum up base amounts, GST, TDS, and total receivable across all matched tickets.
+   6. Generate sequentially incrementing INV UID: `INV-YYYY-####` where the sequence number resets annually (IST) and is padded to 4 digits (e.g. `INV-2026-0001`).
+   7. Generate two separate PDF documents using `pdf-lib` and upload them to the `'invoices'` Supabase Storage bucket:
+      - **Summary Invoice PDF**: A professional single-page document outlining Seragen details, hospital details, billing period, total billed cases, and net subtotal, GST (18%), TDS (10%), and Grand Total calculations. Saved as `{invoice_uid}.pdf`.
+      - **Patient Annexure PDF**: A separate detailed multi-page document displaying a comprehensive data table: `S.No`, `Ticket ID`, `Patient Name`, `Service Name`, `Completion Date`, `Base rate`, `GST`, `TDS`, and `Total`. Supports dynamic multi-page pagination. Saved as `{invoice_uid}_annexure.pdf`.
+   8. Insert the invoice record in the database, and update all matching tickets to link them to `invoice_id`.
+9. The generated invoice appears in the main table.
+10. The table has two separate actions per row:
+    - **Invoice PDF** (`secondary` outline): Opens the secure summary invoice PDF in a new tab using a 60-minute signed URL.
+    - **Annexure PDF** (`pink` outline): Opens the secure patient annexure PDF in a new tab using a 60-minute signed URL.
 
-### 8.3 Invoice Immutability
+### 8.3 Invoice Immutability and Backward Compatibility
 
-Once generated, an invoice cannot be changed or regenerated. There is exactly one invoice per ticket (enforced by a UNIQUE constraint on `ticket_id`). If a mistake is made, a correction process must be handled outside the system (pending future feature).
+Once generated, an invoice cannot be changed, regenerated, or deleted. Related tickets are permanently linked via the `invoice_id` foreign key on the `tickets` table, which prevents them from being queried for future invoices. 
+
+For backward compatibility, the `tickets.invoice_id` column is nullable and has an index, and the `invoices.ticket_id` column is also nullable with its UNIQUE constraint removed, allowing historical single-ticket invoices to remain completely intact in the system. If a billing error occurs, corrections must be managed outside the system.
 
 ---
 
@@ -527,9 +543,9 @@ Step 6: Slice B — Expense Claims (needs users, tickets, claim_rate_config)
   → UI: Accountant claims review page
 
 Step 7: Slice D — Billing & Invoice (needs Slice C active charges + tickets)
-  → API routes: invoices, invoices/[id]/pdf
-  → Create lib/pdf-utils.ts (invoice PDF generation — layout pending Anish's design)
-  → UI: accountant/billing/page.tsx
+  → API routes: invoices, invoices/[id]/pdf, invoices/[id]/annexure, billing/unbilled-tickets
+  → Create/Update lib/pdf-utils-server.ts (Summary PDF and dynamic multipage Annexure PDF generation)
+  → UI: accountant/billing/page.tsx (Hospital and Date range selection, dynamic cases table preview)
 
 Step 8: Slice F — Accountant Inventory Logs (needs Slice E tables)
   → No new API routes (reuses GET /api/inventory)
@@ -568,10 +584,10 @@ These are the most important business rules. The system must enforce all of them
 - Override requires a reason text.
 
 ### Invoice Rules
-- Ticket must be completed. Cannot invoice an open or in-progress ticket.
-- One invoice per ticket. Cannot generate a second invoice for the same ticket.
-- Active charge must exist. Cannot generate invoice without a rate set in Slice C.
-- Invoice is immutable once created.
+- Tickets must be completed before being invoiced. Cannot invoice an open or in-progress ticket.
+- Tickets are linked to at most one invoice. A ticket cannot be added to a second invoice or invoiced again.
+- Active charge rate must exist for each ticket's hospital + service type at its exact completion date, otherwise generation is blocked.
+- Invoice is immutable once created. No regeneration or modifications.
 
 ### Hospital Charge Rules
 - No update or delete on charges — only new rows with a new effective_from date.

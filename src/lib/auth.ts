@@ -427,6 +427,34 @@ export function canUpdateDiagnosticField(
 }
 
 // ============================================
+// FINANCIAL & INVENTORY ROLE PERMISSIONS
+// ============================================
+
+export function canAccessAccountantDashboard(role: UserRole): boolean {
+    return role === 'accountant'
+}
+
+export function canManageFunds(role: UserRole): boolean {
+    return role === 'accountant'
+}
+
+export function canManageHospitalCharges(role: UserRole): boolean {
+    return role === 'accountant'
+}
+
+export function canConfigureClaimRates(role: UserRole): boolean {
+    return role === 'accountant'
+}
+
+export function canManageInventory(role: UserRole): boolean {
+    return role === 'officer_backoffice'
+}
+
+export function canViewInventoryLogs(role: UserRole): boolean {
+    return role === 'accountant' || role === 'officer_backoffice'
+}
+
+// ============================================
 // DOCUMENT REPLACE PERMISSION (re-export for server/API use)
 // ============================================
 export {

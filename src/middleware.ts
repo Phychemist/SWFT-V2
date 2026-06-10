@@ -11,11 +11,21 @@ const roleRoutes: Record<string, string[]> = {
     '/settings/users': ['admin', 'manager'], // User management - admin & manager (must be before /settings)
     '/settings': ['admin', 'manager'],
     '/users': ['admin'],
-    '/api/users': ['admin', 'manager'], // managers can view users for assignment
+    '/api/users': ['admin', 'manager', 'accountant'], // managers and accountants can view users for assignment/allocations
     '/backoffice': ['officer_backoffice'], // Backoffice dashboard - only for backoffice officers
     '/field-executive': ['field_executive'], // Field executive dashboard
     '/dashboard': ['admin', 'manager', 'customer_success'], // Exclude backoffice and field executive
     '/tickets': ['admin', 'manager', 'customer_success'], // Exclude backoffice and field executive
+    // ── New routes for Slices A–F ─────────────────────────────────
+    '/accountant':              ['accountant'],
+    '/manager/claims':          ['manager'],          // new manager claims page
+    '/api/funds':               ['accountant'],
+    '/api/fund-allocations':    ['accountant'],
+    '/api/expense-claims':      ['accountant', 'manager', 'field_executive'],
+    '/api/claim-rate-config':   ['accountant', 'manager', 'field_executive'],
+    '/api/hospital-charges':    ['accountant'],
+    '/api/invoices':            ['accountant'],
+    '/api/inventory':           ['officer_backoffice', 'field_executive', 'accountant'],
 }
 
 // Read-only routes that all authenticated users can access (write is controlled in API)

@@ -364,3 +364,185 @@ export interface TicketComment {
     created_at: string
     updated_at: string
 }
+
+// ============================================
+// SLICES A-F (FINANCIAL & INVENTORY) TYPES
+// ============================================
+
+// ── Slice A ──────────────────────────────────────────────────
+export interface FundEntry {
+  id: string
+  amount: number
+  entry_date: string           // YYYY-MM-DD
+  remarks: string | null
+  entered_by: string           // uuid ref users.id
+  created_at: string
+}
+
+export interface FundAllocation {
+  id: string
+  user_id: string
+  amount: number
+  entry_date: string
+  remarks: string | null
+  allocated_by: string
+  recipient_balance_after_alloc: number
+  recipient_total_expenses_at_alloc: number
+  created_at: string
+}
+
+export interface UserBalance {
+  user_id: string
+  full_name: string
+  role: 'manager' | 'field_executive'
+  total_received: number       // 0 for managers unless explicitly allocated
+  total_expenses: number       // sum of approved claims
+  current_balance: number      // total_received - total_expenses (can be negative)
+}
+
+export interface ActivityLogRow {
+  id: string
+  type: 'allocation' | 'expense'
+  date: string
+  user_id: string
+  user_name: string
+  user_role: string
+  amount: number
+  balance_at_moment: number | null
+  total_expenses_at_moment: number | null
+  reference: string | null
+  performed_by_name: string
+}
+
+// ── Slice B ──────────────────────────────────────────────────
+export interface ReimbursementItem {
+  name: string       // e.g. "Tea", "Coffee", "Snacks", or user-defined
+  amount: number
+}
+
+export interface ExpenseClaim {
+  id: string
+  claimant_id: string
+  ticket_id: string | null           // NULL for manager free-standing claims
+
+  outstation_travel: boolean
+  from_place: string | null
+  to_place: string | null
+
+  distance_km: number | null
+  petrol_amount: number
+  petrol_rate_at_submission: number | null
+
+  breakfast_amount: number
+  lunch_amount: number
+  dinner_amount: number
+
+  reimbursement_items: ReimbursementItem[]
+
+  accommodation_amount: number
+  travel_allowance_amount: number
+
+  miscellaneous_amount: number
+  miscellaneous_description: string | null
+
+  reason: string | null              // required for manager claims only
+
+  proof_urls: string[]               // array of Supabase Storage URLs
+
+  notes: string | null
+
+  total_amount: number               // server-computed sum of all amount fields
+
+  status: 'pending' | 'approved' | 'rejected'
+  reviewed_by: string | null
+  reviewed_at: string | null
+  review_notes: string | null
+
+  created_at: string
+  updated_at: string
+}
+
+export interface ClaimRateConfig {
+  id: string
+  petrol_rate_per_km: number         // default 4.00
+  breakfast_max: number              // default 100.00
+  lunch_max: number                  // default 150.00
+  dinner_max: number                 // default 150.00
+  updated_by: string | null
+  updated_at: string
+}
+
+export interface ClaimsStats {
+  pending_count: number
+  total_approved_amount?: number
+  total_claims_count?: number
+  advance_received?: number
+  total_claimed?: number
+  total_approved?: number
+  current_balance?: number
+}
+
+// ── Slice C ──────────────────────────────────────────────────
+export interface HospitalServiceCharge {
+  id: string
+  hospital_id: string
+  service_type_id: string
+  amount: number
+  gst_applicable: boolean
+  tds_applicable: boolean
+  effective_from: string             // YYYY-MM-DD
+  valid_until: string | null
+  created_by: string
+  created_at: string
+}
+
+// ── Slice D ──────────────────────────────────────────────────
+export interface Invoice {
+  id: string
+  uid: string                        // e.g. "INV-20260516-0001"
+  ticket_id: string
+  hospital_service_charge_id: string
+  base_amount: number
+  gst_amount: number
+  tds_amount: number
+  total_amount: number
+  pdf_url: string
+  generated_by: string
+  generated_at: string
+}
+
+// ── Slice E ──────────────────────────────────────────────────
+export interface InventoryItem {
+  id: string
+  name: string
+  unit: string
+  cost_per_unit: number
+  minimum_threshold: number
+  warehouse_stock: number            // computed
+  total_allocated: number            // computed
+  total_consumed: number             // computed
+  below_threshold: boolean           // computed flag
+}
+
+export interface InventoryAllocation {
+  id: string
+  item_id: string
+  from_user_id: string
+  to_user_id: string
+  quantity: number
+  allocated_by: string
+  created_at: string
+}
+
+export interface InventoryConsumption {
+  id: string
+  item_id: string
+  fe_id: string
+  ticket_id: string
+  quantity_used: number
+  kit_default_quantity: number
+  overridden: boolean
+  override_reason: string | null
+  created_at: string
+  updated_at: string
+}
